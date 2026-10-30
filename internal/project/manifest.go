@@ -33,6 +33,8 @@ const (
 
 	// ShortStateDirName 保存短篇状态与结构/场景工件（计划 §6.3）。
 	ShortStateDirName = "short"
+	// AuthoringDirName 保存跨管线的候选、版本与作者确认记录（计划 §6.3）。
+	AuthoringDirName = "authoring"
 )
 
 // PipelineKind 是作品根目录里显式声明的管线类型，创建后不可变更。
