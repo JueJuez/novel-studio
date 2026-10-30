@@ -171,8 +171,8 @@ brief → structure → scenes → draft → review → author_approval → fina
 |---|---|---|---|
 | P0-01 | 在 WSL2/Linux 从固定提交构建，记录环境、依赖与现有检查结果；原始长篇/短篇样本复制后回放 | 原 CI 与 README 检查；失败区分基线问题和新回归，原件不修改。已完成（2026-10-31）：WSL2 Ubuntu 24.04 + Go 1.27.1（与 CI 同版）在 d247387 构建测试，代码树与基线 ed04a10 一致（diff 仅文档，已核实）。go build、release 构建、--version/doctor 冒烟、litellm -race、dashboard node 测试、race 分片合同、store 0/2 与 agents 0/4 分片、race-sensitive 包全部通过；go test ./... 仅 1 失败＝TestCheckpointStore_SeqNotConsumedOnWriteFailure（root 可写只读文件所致，普通用户 o1830 复测通过，非基线缺陷）；dashboard Python 52/53，1 项为 WSL2 ctime 粒度时序敏感 flake（CI 通过）。无原始作品样本工程（data/ 不存在，evals/cases 为评测断言 JSON、eval inspect 需既有产物），样本回放移交 P5-02 与验收真实样稿。日志 refer/p0-baseline-logs/（不入库）。环境注记：proxy.golang.org 不可达，需 GOPROXY=goproxy.cn | 已完成 2026-10-31 |
 | P0-02 | 固定 Show Me The Story 与 Pagekin commit，审计局部编辑、来源引用、校订、组件和许可依赖 | 给每项候选填写第 3 节要求的移植记录；不以 README 声明代替源码和运行验证。已完成（2026-10-31）：两仓库完整克隆并固定于 refer/（SMTS @ f790187，Pagekin/AI-Novel-Writer @ 59153ce）；SMTS=MIT、Pagekin=GPL v3。逐项移植记录见 docs/dual-pipeline-porting-audit.md：R1 块级编辑与按块校订合同、R2 本地 BM25+CJK bigram 检索、R3 校订流程、R4 前端依赖（@xianii/design-system 许可未核查，引入前必查）；Pagekin 仅行为参考（修稿交互独立实现，文风分析登记不移植）。本轮为静态源码审计，未运行外部应用 | 已完成 2026-10-31 |
-| P0-03 | 沿真实发布链定位作者确认 Hook、取消边界和 long adapter；确认既有存储哪些能无损复用 | 使用隔离 fixture 验证“模型通过但未获作者确认”时不会成为正史 | 待实施 |
-| P0-04 | 核对本 fork 的 CI、发布配置、安装器、镜像和帮助链接 | `origin` 已改不代表发行已迁移；当前安装器/Release/镜像仍有上游地址，正式发布前逐项处理 | 待实施 |
+| P0-03 | 沿真实发布链定位作者确认 Hook、取消边界和 long adapter；确认既有存储哪些能无损复用 | 使用隔离 fixture 验证“模型通过但未获作者确认”时不会成为正史。已完成（2026-10-31）：定位见 docs/design-audits/author-confirmation-hook-audit-20261031.md——阶段机 body_ready→…→published 固定单调且不可跳步，模型裁决（formal_accepted）与正史晋升（published，经 DirectoryPublishStore 原子晋升）之间已隔强制 actual_matched；主 Hook＝domain 转移表 + cmd 晋升函数两道闸；取消边界＝每阶段持久回执＋既有恢复路径，作者等待不持锁；ChapterRenderTransactionStore/DirectoryPublishStore/执行锁/checkpoint 可无损复用。fixture＝internal/store/chapter_render_transaction_author_boundary_test.go（模型 accept 后跳步被拒、无发布回执、canonical 输出零字节），连同 9 个既有 chapter-render store 测试在 WSL2 Go 1.27.1 全部通过 | 已完成 2026-10-31 |
+| P0-04 | 核对本 fork 的 CI、发布配置、安装器、镜像和帮助链接 | `origin` 已改不代表发行已迁移；当前安装器/Release/镜像仍有上游地址，正式发布前逐项处理。已完成（2026-10-31）：13 项逐条核对见 docs/design-audits/fork-release-audit-20261031.md；首次发布最小必改集＝.goreleaser owner + release.yml ghcr 命名空间 + main.go:377 自更新 Repo（行为级风险：fork 执行 `update` 会装回上游二进制）；install.sh/docker-compose 待首个 Release 后切换；README 徽章与 README-TECHNICAL 5 处引用随 P5-04；ci.yml/Dockerfile 无需改动；go.mod module 路径按计划 §9 保留 | 已完成 2026-10-31 |
 
 ### P1：建立入口，保护原协议
 
@@ -283,9 +283,9 @@ cd novel-studio
 
 ## 10. 当前状态与下一批入口
 
-- 已完成：本地基线与关键能力静态核查；外部项目公开资料、许可文本及部分源码核对；本计划及 README 入口；本地 `origin` fetch/push URL 修改；P0-01 基线构建与现有检查（2026-10-31，证据见第 7 节与 refer/p0-baseline-logs/）；P0-02 外部项目移植审计（docs/dual-pipeline-porting-audit.md）。
-- 未完成：P0-03/P0-04 与 P1—P5 的执行与业务开发、云端实测、浏览器验收、作品评阅和派生版发布。
-- 下一批从 **P0-03/P0-04 → P1-01** 开始；先定位长篇作者确认边界与发行核对，再建立作品入口。
+- 已完成：本地基线与关键能力静态核查；外部项目公开资料、许可文本及部分源码核对；本计划及 README 入口；本地 `origin` fetch/push URL 修改；P0-01 基线构建与现有检查（2026-10-31，证据见第 7 节与 refer/p0-baseline-logs/）；P0-02 外部项目移植审计（docs/dual-pipeline-porting-audit.md）；P0-03 作者确认边界定位与 fixture 验证（docs/design-audits/author-confirmation-hook-audit-20261031.md）；P0-04 fork 发行链核对（docs/design-audits/fork-release-audit-20261031.md）。P0 全部完成。
+- 未完成：P1—P5 的执行与业务开发、云端实测、浏览器验收、作品评阅和派生版发布。
+- 下一批从 **P1-01/P1-02 → P1-03** 开始；建立版本化项目 manifest 与短篇骨架，再定义作者确认合同。
 - 执行协议：开发批次的任务选取、证据记录、提交推送与验收触发见 [dual-pipeline-automation.md](dual-pipeline-automation.md)；批次大小固定 2 个任务，每批完成即提交并推送。
 
 后续状态记录需附对应提交/检查结果/样本路径；保留原始正文、诊断和候选，不用任务勾选或自动评分替代交付证据。
