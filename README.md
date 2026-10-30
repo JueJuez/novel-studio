@@ -23,6 +23,8 @@
 
 ---
 
+> 当前开发仓库：[JueJuez/novel-studio](https://github.com/JueJuez/novel-studio)。长短篇双管线改造见[开发计划](docs/dual-pipeline-development-plan.md)，尚未实现。下文为继承的现有引擎说明；Release、一键安装和预构建镜像仍指向上游，使用本分支请按源码方式运行。
+
 novel-studio 面向长篇小说、网文连载、短篇整书和故事工作室。它把大纲、人物、世界状态、RAG、正文审核与返工从易丢失的聊天上下文，转换成保存在本机、可验证、可恢复的生产流水线。
 
 它不是“续写上一段”的聊天壳，也不是所见即所得的桌面编辑器。新规划先冻结全书导航并完成整弧条件预演，再让重要角色在接下来至多 3 章的窗口内独立决策并裁决后果；窗口封存后，才逐章渲染、逐章审核。只有通过审核的正文和实际结果会进入正史。
@@ -78,7 +80,7 @@ curl -fsSL https://raw.githubusercontent.com/Xiaoyangy/novel-studio/main/scripts
 需要当前 `main` 的最新能力时，从源码运行：
 
 ```bash
-git clone https://github.com/Xiaoyangy/novel-studio.git
+git clone git@github.com:JueJuez/novel-studio.git
 cd novel-studio
 ./scripts/run-local.sh doctor
 ```
@@ -433,6 +435,7 @@ data/runs/<书名>/
 
 | 文档 | 内容 |
 |---|---|
+| [长短篇双管线开发计划](docs/dual-pipeline-development-plan.md) | 当前改造目标、能力来源、模块边界、实施任务和验收；业务功能待实施 |
 | [生产与运维参考](README-TECHNICAL.md) | 执行锁、receipt、恢复、rebase、outline repair、命令和完整输出结构 |
 | [系统架构](docs/architecture.md) | Host、Agent、Tools、Store 与上下文拓扑 |
 | [Project-All 按弧架构](docs/project-all-architecture.md) | 当前弧推演、seal、逐章验收和下一弧解锁 |

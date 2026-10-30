@@ -23,6 +23,8 @@ Simulate the world and its characters, seal the chapter plan, then render only t
 
 ---
 
+> Development repository: [JueJuez/novel-studio](https://github.com/JueJuez/novel-studio). The [dual-pipeline development plan](docs/dual-pipeline-development-plan.md) describes work that is not implemented yet. The engine documentation below is inherited from upstream; Release downloads, the installer, and prebuilt images still target upstream. Run this branch from source.
+
 novel-studio is designed for novels, serialized fiction, complete short books, and story-production teams. It turns outlines, character state, world state, RAG, reviews, and rewrites from fragile chat history into a local, verifiable, recoverable production pipeline.
 
 It is not a “continue the previous paragraph” chat wrapper, nor a WYSIWYG desktop editor. New planning freezes the book-wide navigation and rehearses the whole arc conditionally, then lets important characters make independent decisions within the next window of at most three chapters. Only after those consequences are arbitrated and the window is sealed does it render and review prose chapter by chapter. Only accepted prose and observed outcomes become canon.
@@ -78,7 +80,7 @@ The installer selects a writable destination, verifies SHA-256, and prints a `PA
 Use the current `main` branch when you need unreleased features:
 
 ```bash
-git clone https://github.com/Xiaoyangy/novel-studio.git
+git clone git@github.com:JueJuez/novel-studio.git
 cd novel-studio
 ./scripts/run-local.sh doctor
 ```
@@ -410,6 +412,7 @@ Current limits:
 
 | Document | Contents |
 |---|---|
+| [Dual-pipeline development plan](docs/dual-pipeline-development-plan.md) | Scope, source projects, module boundaries, implementation tasks, and acceptance; not implemented yet |
 | [Production and operations](README-TECHNICAL.md) | Execution locks, receipts, recovery, rebase, outline repair, commands, and the full output tree |
 | [System architecture](docs/architecture.md) | Host, Agent, Tools, Store, and context topology |
 | [Project-All arc architecture](docs/project-all-architecture.md) | Current-arc projection, sealing, chapter acceptance, and next-arc unlock |

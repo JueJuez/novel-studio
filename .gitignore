@@ -27,6 +27,10 @@ go.work.sum
 
 # env file
 .env
+.env.local
+
+# 双管线自动化批次的进行中锁（见 docs/dual-pipeline-automation.md）
+.batch-lock
 
 # 项目级配置 dotdir（镜像 ~/.novel-studio/）：config.json 含密钥，rules/ 为本地写作偏好
 .novel-studio/
