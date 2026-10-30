@@ -41,6 +41,9 @@ func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "list" || os.Args[1] == "novels") {
 		os.Exit(runNovelsListCommand(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "short-story" {
+		os.Exit(runShortStoryCommand(os.Args[2:]))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "reader-metrics" {
 		opts, _, err := parseCLIOptions(nil)
 		if err != nil {
@@ -486,6 +489,7 @@ func printTopUsage(w *os.File) {
 	fmt.Fprintln(w, "  novel-studio --architect-check [--dir d]   # 检查 Architect foundation，通过后才允许 zero-init")
 	fmt.Fprintln(w, "  novel-studio --zero-init [--dir d]         # 新书第一章前的角色/关系/资源推演资产")
 	fmt.Fprintln(w, "  novel-studio eval inspect --cases evals/cases/harness # Harness 检查既有项目产物")
+	fmt.Fprintln(w, "  novel-studio short-story init|status|resume   # 短篇管线最小入口（双管线计划 P1）")
 	fmt.Fprintln(w, "  novel-studio --simulate [--no-diag]         # 分析 simulate/ 语料合成仿写画像")
 	fmt.Fprintln(w, "  novel-studio --import-sim <profile.json>    # 导入此前生成的仿写画像（默认写 diag）")
 	fmt.Fprintln(w, "  novel-studio --steer \"<指令>\"               # 排队一条干预，下次启动生效")

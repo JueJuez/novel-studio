@@ -178,8 +178,8 @@ brief → structure → scenes → draft → review → author_approval → fina
 
 | ID | 任务 / 交付物 | 验证与依赖 | 状态 |
 |---|---|---|---|
-| P1-01 | 实现版本化项目 manifest、短长篇显式选择、旧项目只读发现与路径映射 | P0；无 manifest 的旧工程不写回、不重分管线，未知格式明确拒绝写入 | 待实施 |
-| P1-02 | 增加短篇独立状态/工件与恢复入口；长篇入口仍使用原调度 | 两管线不会互相加载状态；短篇无需世界推演和 Qdrant 即可启动 | 待实施 |
+| P1-01 | 实现版本化项目 manifest、短长篇显式选择、旧项目只读发现与路径映射 | P0；无 manifest 的旧工程不写回、不重分管线，未知格式明确拒绝写入。已完成（2026-10-31）：internal/project——project.json（schema_version=novel-studio-project.v1、proj-<32hex> 稳定 ID、标题/语言/pipeline_kind/协作策略/引擎协议）；创建时显式选 short/long（无默认、不可覆盖、旧工程拒绝写回）；Load/Discover 对未知 schema_version 与未知字段明确拒绝；DiscoverRun/DiscoverRuns 与 cmd 层 resolveNovelDir 同口径只读发现；路径映射 long=output/novel 原位、short=<root>/short。测试 6 项见 internal/project/manifest_test.go；CLI 冒烟（init/status/resume、legacy 拒绝）通过 | 已完成 2026-10-31 |
+| P1-02 | 增加短篇独立状态/工件与恢复入口；长篇入口仍使用原调度 | 两管线不会互相加载状态；短篇无需世界推演和 Qdrant 即可启动。已完成（2026-10-31）：internal/shortstory——§6.1 八阶段状态机（brief→structure→scenes→draft→review→author_approval→finalize→delivered，review↔draft 修稿循环），转移表固定；waiting_author/failed/cancelled 为独立运行状态事件，不冒充阶段；每阶段工件 no-clobber+摘要绑定，崩溃幂等收尾、异字节冲突；Load 即恢复入口并校验全部工件摘要；包内零长篇依赖（不导入 host/agents/tools/store，无需世界推演/Qdrant）。CLI＝novel-studio short-story init/status/resume（main.go 早分发，长篇入口未动）。测试 6 项见 internal/shortstory/store_test.go（含管线隔离断言：短篇工程无 output/novel、旧长篇工程 Open 返回 NotExist）；WSL2 Go 1.27.1 build/vet/gofmt/test 全通过 | 已完成 2026-10-31 |
 | P1-03 | 定义文本版本、候选、作者确认和来源引用合同，首先服务短篇，不提前抽象所有业务 | 旧版本冲突、重复提交、候选拒绝、确认失效、崩溃恢复检查 | 待实施 |
 | P1-04 | 接入现有模型配置、流式调用、usage/成本与取消，不另建 provider 客户端 | mock 验证路由/取消/用量；真实连通验证单列，不和无模型检查混记 | 待实施 |
 
@@ -283,9 +283,9 @@ cd novel-studio
 
 ## 10. 当前状态与下一批入口
 
-- 已完成：本地基线与关键能力静态核查；外部项目公开资料、许可文本及部分源码核对；本计划及 README 入口；本地 `origin` fetch/push URL 修改；P0-01 基线构建与现有检查（2026-10-31，证据见第 7 节与 refer/p0-baseline-logs/）；P0-02 外部项目移植审计（docs/dual-pipeline-porting-audit.md）；P0-03 作者确认边界定位与 fixture 验证（docs/design-audits/author-confirmation-hook-audit-20261031.md）；P0-04 fork 发行链核对（docs/design-audits/fork-release-audit-20261031.md）。P0 全部完成。
-- 未完成：P1—P5 的执行与业务开发、云端实测、浏览器验收、作品评阅和派生版发布。
-- 下一批从 **P1-01/P1-02 → P1-03** 开始；建立版本化项目 manifest 与短篇骨架，再定义作者确认合同。
+- 已完成：本地基线与关键能力静态核查；外部项目公开资料、许可文本及部分源码核对；本计划及 README 入口；本地 `origin` fetch/push URL 修改；P0 全部四项（基线构建与检查、移植审计、作者确认边界定位、发行链核对，证据见第 7 节与 docs/design-audits/）；P1-01 项目 manifest 与旧作品只读发现（internal/project）；P1-02 短篇状态机/工件/恢复入口与 short-story 命令（internal/shortstory、cmd/novel-studio/shortstory_cmd.go）。
+- 未完成：P1-03/P1-04 与 P2—P5 的执行与业务开发、云端实测、浏览器验收、作品评阅和派生版发布。
+- 下一批从 **P1-03/P1-04 → P2-01** 开始；定义作者确认合同并接通模型配置，随后进入短篇纵向闭环。
 - 执行协议：开发批次的任务选取、证据记录、提交推送与验收触发见 [dual-pipeline-automation.md](dual-pipeline-automation.md)；批次大小固定 2 个任务，每批完成即提交并推送。
 
 后续状态记录需附对应提交/检查结果/样本路径；保留原始正文、诊断和候选，不用任务勾选或自动评分替代交付证据。
