@@ -143,13 +143,8 @@ type SceneDraft struct {
 	Body       string `json:"body"`
 }
 
-// ReviewReport 记录全文/局部审阅结果；Issue 集合与正文哈希绑定的细化
-// 在 P2-03 落地，此处先保证审阅工件可持久、可恢复。
-type ReviewReport struct {
-	Target  string   `json:"target"`
-	Summary string   `json:"summary"`
-	Issues  []string `json:"issues,omitempty"`
-}
+// ReviewReport 的完整定义见 review.go（P2-03 结构化审阅：绑定版本、
+// 逐条原文引用、语义评审标记）。
 
 // AuthorApproval 是作者对终稿候选的确认。完整确认合同（父版本、规则
 // 摘要、失效条件）在 P1-03 的 authoring 层落地；此处先绑定被批准内容的

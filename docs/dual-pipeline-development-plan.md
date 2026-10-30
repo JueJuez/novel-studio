@@ -189,8 +189,8 @@ brief → structure → scenes → draft → review → author_approval → fina
 |---|---|---|---|
 | P2-01 | 创意澄清、结构生成/手改/确认、场景计划与字数预算 | P1；作者规则、人物知识与结局承诺进入结构和场景；单篇与多场景均支持。已完成（2026-10-31）：创意澄清＝brief 工件随 init 落盘（P1-02）；结构/场景生成 runner 组装 assets/prompts/shortstory-structure|scenes.md（作者约束、人物知识与检索知识全部进入提示词）；AI 产出一律登记为 authoring 候选、不自动成为正式故事，ConfirmTarget（Accept+作者确认）统一收口，手改走 manual 候选同一合同，确认后旧确认自动失效；场景计划校验＝index 连续、DAG 只能依赖更早场景、字数预算逐景>0 且合计落在 5,000—30,000 rune 验证区间（越界显式报错不静默）、承诺逐条兑现安排（facts 或结局方向字面包含，全局豁免缺陷已修除）；单篇（chapter=0）与多场景均支持。测试见 internal/shortstory/generation_test.go，WSL2 Go 1.27.1 build/vet/gofmt/test 全通过 | 已完成 2026-10-31 |
 | P2-02 | 逐场景草稿、前文上下文、轻量资料检索和局部重写 | 不调用长篇推演链；超上下文显式提示或分层审核，不静默丢掉结局/前文。已完成（2026-10-31）：逐场景草稿 runner＝前文摘录按 causal_deps 组织、直接前置场景保留更长结尾；轻量资料检索＝BM25+CJK bigram、整条预算打包不截半条（移植自 SMTS @ f790187 MIT，适配记录 docs/dual-pipeline-porting-audit.md R2），语料为场景事实/承诺/约束/知识条目；局部重写 runner＝原稿+指令+必须保留事实清单产出候选；上下文分层裁剪＝全量→丢检索知识→前文截短 300 rune→仅硬保证项→显式 ErrContextOverflow，结构承诺/结局方向/场景计划/前文永不静默丢弃；包依赖保持零 host/agents/tools/store（不调用长篇推演链）。测试覆盖检索排序/整条打包/无命中、裁剪各层与溢出、重写保留清单 | 已完成 2026-10-31 |
-| P2-03 | 事实/伏笔候选与来源，矛盾、因果、POV、兑现和文风审阅 | 检查结构化报告与原文绑定；相互矛盾/模型漏检样本留作语义评审 | 待实施 |
-| P2-04 | 作者接受正文、全文终审、作者终稿确认、Markdown/TXT 与备份 | 复用低层文本/清单能力，新短篇拥有独立终审前置；阻断旧哈希审核和未确认交付 | 待实施 |
+| P2-03 | 事实/伏笔候选与来源，矛盾、因果、POV、兑现和文风审阅 | 检查结构化报告与原文绑定；相互矛盾/模型漏检样本留作语义评审。已完成（2026-10-31）：审阅 runner（assets/prompts/shortstory-review.md，五类 issue：contradiction/causality/pov/promise/style）——quote 必须与被审正文逐字连续子串否则该条丢弃（原文绑定机械校验，幻觉定位直接拒绝并强制语义评审标记）；blocker 级矛盾强制 SemanticReviewRequired，全空报告兜底标记；报告经 RecordSource(kind=review_issue)+AcceptSource 落盘绑定被审版本，LoadLatestReview 按当前版本取回；事实/伏笔提取 runner（shortstory-facts.md）登记为来源候选（未决定态），authoring 新增 AcceptSource/RejectSource/SourceDecision/ConfirmedSources——作者接受才进已确认资料，拒绝后接受互斥、重放幂等。测试 review_test.go；「相互矛盾/漏检样本留语义评审」由 SemanticReviewRequired 记账 | 已完成 2026-10-31 |
+| P2-04 | 作者接受正文、全文终审、作者终稿确认、Markdown/TXT 与备份 | 复用低层文本/清单能力，新短篇拥有独立终审前置；阻断旧哈希审核和未确认交付。已完成（2026-10-31）：AssembleFullText 按场景 index 组装已确认草稿（任一场景未经作者确认即阻断；chapter>0 输出章标题、=0 单篇无章号）；CommitFullText 把组装结果提交为 fulltext 内容寻址版本（场景返工必然改变版本）；FinalizeGateCheck 独立终审前置＝①全文与组装逐字节一致 ②当前版本有终审报告且无未豁免 blocker ③作者终稿确认绑定当前版本——旧版本报告与旧确认一律拒绝（阻断旧哈希审核复用）；Export＝Markdown/TXT+manifest.json（全文/MD/TXT 三哈希互验、绑定确认 ID）+export/backup/<时间戳>/ 整份备份，前置不过即 ErrDeliveryBlocked。测试 finalize_test.go 覆盖四级阻断链与返工后重走终审全程 | 已完成 2026-10-31 |
 
 P2 出口必须演示：创建短篇 → 确认结构 → 生成正文 → 定向修改 → 接受候选 → 全文检查 → 作者确认 → 导出；中间关闭程序后可以从已持久工件恢复。全流程允许 CLI/API，界面完善在 P4。
 
@@ -283,9 +283,9 @@ cd novel-studio
 
 ## 10. 当前状态与下一批入口
 
-- 已完成：本地基线与关键能力静态核查；外部项目公开资料、许可文本及部分源码核对；本计划及 README 入口；本地 `origin` fetch/push URL 修改；P0 全部四项（基线构建与检查、移植审计、作者确认边界定位、发行链核对，证据见第 7 节与 docs/design-audits/）；P1 全部四项（manifest/只读发现、短篇状态机与命令、版本/候选/确认/来源合同、模型适配器）；P2-01 创意澄清/结构/场景计划与确认流；P2-02 逐场景草稿/轻量检索/局部重写（证据见第 7 节）。
-- 未完成：P2-03/P2-04 与 P3—P5 的执行与业务开发、云端实测、浏览器验收、作品评阅和派生版发布。
-- 下一批从 **P2-03/P2-04 → P2 出口演示** 开始；补全文审阅与导出，随后演示短篇端到端闭环。
+- 已完成：本地基线与关键能力静态核查；外部项目公开资料、许可文本及部分源码核对；本计划及 README 入口；本地 `origin` fetch/push URL 修改；P0 全部四项（基线构建与检查、移植审计、作者确认边界定位、发行链核对，证据见第 7 节与 docs/design-audits/）；P1 全部四项（manifest/只读发现、短篇状态机与命令、版本/候选/确认/来源合同、模型适配器）；P2 全部四项（创意澄清/结构/场景计划、逐场景草稿/检索/重写、事实与结构化审阅、全文终审与导出备份）（证据见第 7 节）。
+- 未完成：P2 出口演示与 P3—P5 的执行与业务开发、云端实测、浏览器验收、作品评阅和派生版发布。
+- 下一批从 **P2 出口演示 → P3-01/P3-02** 开始；先演示短篇端到端闭环（关闭程序后可恢复），随后移植编辑能力。
 - 执行协议：开发批次的任务选取、证据记录、提交推送与验收触发见 [dual-pipeline-automation.md](dual-pipeline-automation.md)；批次大小固定 2 个任务，每批完成即提交并推送。
 
 后续状态记录需附对应提交/检查结果/样本路径；保留原始正文、诊断和候选，不用任务勾选或自动评分替代交付证据。

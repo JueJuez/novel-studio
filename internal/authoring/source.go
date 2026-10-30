@@ -129,3 +129,92 @@ func (s *Store) SourceStale(targetID, sourceID string) (*StaleReport, error) {
 func (s *Store) sourcePath(targetID, sourceID string) string {
 	return filepath.Join(s.dir, "targets", targetID, "sources", sourceID+".json")
 }
+
+// AcceptSource 把一条来源（模型提取的事实/伏笔候选）转为已确认资料。
+// no-clobber：重复接受幂等；已拒绝的来源不能转为接受。
+func (s *Store) AcceptSource(targetID, sourceID string) error {
+	if _, err := s.LoadSource(targetID, sourceID); err != nil {
+		return err
+	}
+	acceptedPath, rejectedPath := s.sourceDecisionPaths(targetID, sourceID)
+	if _, err := os.Stat(rejectedPath); err == nil {
+		return fmt.Errorf("authoring: 来源 %s 已被拒绝，不能接受: %w", sourceID, ErrCandidateConflict)
+	}
+	payload := map[string]string{
+		"schema_version": SchemaVersionV1,
+		"target_id":      targetID,
+		"source_id":      sourceID,
+		"decision":       "accepted",
+		"at":             time.Now().UTC().Format(time.RFC3339),
+	}
+	return s.writeRecord(acceptedPath, payload)
+}
+
+// RejectSource 拒绝一条来源候选；重复拒绝幂等，已接受的不能改拒。
+func (s *Store) RejectSource(targetID, sourceID, reason string) error {
+	if _, err := s.LoadSource(targetID, sourceID); err != nil {
+		return err
+	}
+	acceptedPath, rejectedPath := s.sourceDecisionPaths(targetID, sourceID)
+	if _, err := os.Stat(acceptedPath); err == nil {
+		return fmt.Errorf("authoring: 来源 %s 已被接受，不能改为拒绝: %w", sourceID, ErrCandidateConflict)
+	}
+	payload := map[string]string{
+		"schema_version": SchemaVersionV1,
+		"target_id":      targetID,
+		"source_id":      sourceID,
+		"decision":       "rejected",
+		"reason":         reason,
+		"at":             time.Now().UTC().Format(time.RFC3339),
+	}
+	return s.writeRecord(rejectedPath, payload)
+}
+
+// SourceDecision 返回来源决定状态："accepted" / "rejected" / ""。
+func (s *Store) SourceDecision(targetID, sourceID string) string {
+	acceptedPath, rejectedPath := s.sourceDecisionPaths(targetID, sourceID)
+	if _, err := os.Stat(acceptedPath); err == nil {
+		return "accepted"
+	}
+	if _, err := os.Stat(rejectedPath); err == nil {
+		return "rejected"
+	}
+	return ""
+}
+
+// ConfirmedSources 返回目标下已接受的来源（作者接受后才进入已确认
+// 资料，计划 §6.1）。调用方需自行结合 SourceStale 判定是否仍然有效。
+func (s *Store) ConfirmedSources(targetID string) ([]*SourceRef, error) {
+	entries, err := os.ReadDir(s.sourcesDir(targetID))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var confirmed []*SourceRef
+	for _, entry := range entries {
+		if !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		sourceID := strings.TrimSuffix(entry.Name(), ".json")
+		if s.SourceDecision(targetID, sourceID) != "accepted" {
+			continue
+		}
+		ref, err := s.LoadSource(targetID, sourceID)
+		if err != nil {
+			return nil, err
+		}
+		confirmed = append(confirmed, ref)
+	}
+	return confirmed, nil
+}
+
+func (s *Store) sourcesDir(targetID string) string {
+	return filepath.Join(s.dir, "targets", targetID, "sources")
+}
+
+func (s *Store) sourceDecisionPaths(targetID, sourceID string) (accepted, rejected string) {
+	base := filepath.Join(s.dir, "targets", targetID, "source_decisions", sourceID)
+	return base + ".accepted.json", base + ".rejected.json"
+}

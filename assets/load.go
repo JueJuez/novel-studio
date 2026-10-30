@@ -39,6 +39,8 @@ type Prompts struct {
 	ShortStoryScenes    string
 	ShortStoryDraft     string
 	ShortStoryRewrite   string
+	ShortStoryReview    string
+	ShortStoryFacts     string
 }
 
 // Bundle 表示运行所需的静态资源集合。
@@ -243,6 +245,8 @@ func loadPrompts() Prompts {
 		ShortStoryScenes:    mustRead(promptsFS, "prompts/shortstory-scenes.md"),
 		ShortStoryDraft:     mustRead(promptsFS, "prompts/shortstory-draft.md"),
 		ShortStoryRewrite:   mustRead(promptsFS, "prompts/shortstory-rewrite.md"),
+		ShortStoryReview:    mustRead(promptsFS, "prompts/shortstory-review.md"),
+		ShortStoryFacts:     mustRead(promptsFS, "prompts/shortstory-facts.md"),
 	}
 }
 
@@ -293,6 +297,8 @@ var promptRole = map[string]string{
 	"shortstory-scenes.md":    "architect",
 	"shortstory-draft.md":     "writer",
 	"shortstory-rewrite.md":   "writer",
+	"shortstory-review.md":    "editor",
+	"shortstory-facts.md":     "editor",
 }
 
 const simulationGuidance = `## 仿写画像
