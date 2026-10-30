@@ -25,16 +25,20 @@ var stylesFS embed.FS
 
 // Prompts 表示嵌入的提示词集合。
 type Prompts struct {
-	Coordinator      string
-	ArchitectShort   string
-	ArchitectLong    string
-	Brainstorm       string
-	Planner          string
-	Writer           string
-	Drafter          string
-	Editor           string
-	SimulationSource string
-	SimulationMerge  string
+	Coordinator         string
+	ArchitectShort      string
+	ArchitectLong       string
+	Brainstorm          string
+	Planner             string
+	Writer              string
+	Drafter             string
+	Editor              string
+	SimulationSource    string
+	SimulationMerge     string
+	ShortStoryStructure string
+	ShortStoryScenes    string
+	ShortStoryDraft     string
+	ShortStoryRewrite   string
 }
 
 // Bundle 表示运行所需的静态资源集合。
@@ -234,6 +238,11 @@ func loadPrompts() Prompts {
 		Editor:           WithSimulationGuidance(mustRead(promptsFS, "prompts/editor.md"), "editor"),
 		SimulationSource: mustRead(promptsFS, "prompts/simulation-source.md"),
 		SimulationMerge:  mustRead(promptsFS, "prompts/simulation-merge.md"),
+
+		ShortStoryStructure: mustRead(promptsFS, "prompts/shortstory-structure.md"),
+		ShortStoryScenes:    mustRead(promptsFS, "prompts/shortstory-scenes.md"),
+		ShortStoryDraft:     mustRead(promptsFS, "prompts/shortstory-draft.md"),
+		ShortStoryRewrite:   mustRead(promptsFS, "prompts/shortstory-rewrite.md"),
 	}
 }
 
@@ -273,13 +282,17 @@ func (b *Bundle) OverridePrompt(file, raw string) error {
 
 // promptRole 把核心 prompt 文件名映射到 simulation guidance 的角色占位符。
 var promptRole = map[string]string{
-	"coordinator.md":     "coordinator",
-	"architect-short.md": "architect",
-	"architect-long.md":  "architect",
-	"planner.md":         "writer",
-	"writer.md":          "writer",
-	"drafter.md":         "writer",
-	"editor.md":          "editor",
+	"coordinator.md":          "coordinator",
+	"architect-short.md":      "architect",
+	"architect-long.md":       "architect",
+	"planner.md":              "writer",
+	"writer.md":               "writer",
+	"drafter.md":              "writer",
+	"editor.md":               "editor",
+	"shortstory-structure.md": "architect",
+	"shortstory-scenes.md":    "architect",
+	"shortstory-draft.md":     "writer",
+	"shortstory-rewrite.md":   "writer",
 }
 
 const simulationGuidance = `## 仿写画像
