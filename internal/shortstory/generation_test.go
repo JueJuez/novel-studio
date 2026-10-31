@@ -20,7 +20,7 @@ func structureResponseJSON() string {
   "conflict": "司机想查明乘客身份，乘客只想在消失前完成一次告别",
   "characters": [{"name": "老周", "desire": "弄清乘客的秘密", "choice": "在码头点燃最后一根烟"}],
   "ending_direction": "开放式：乘客消失，老周收到一条空短信（刻意保留发信人）",
-  "promises": ["空短信的来源必须在结尾可解释或被刻意保留"],
+  "promises": ["空短信的来源在结尾揭晓"],
   "author_constraints": ["开放式结局", "第一人称"]
 }` + "\n```"
 }

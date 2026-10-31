@@ -123,7 +123,7 @@ func ParseReviewResponse(text, targetID string, head *authoring.TextVersion, sce
 	if len(report.Issues) == 0 && strings.TrimSpace(report.Summary) == "" {
 		report.SemanticReviewRequired = true
 	}
-	report.ReviewedAt = time.Now().UTC().Format(time.RFC3339)
+	report.ReviewedAt = time.Now().UTC().Format(time.RFC3339Nano)
 	return report, nil
 }
 

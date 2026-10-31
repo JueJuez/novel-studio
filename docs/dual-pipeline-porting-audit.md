@@ -2,6 +2,15 @@
 
 更新日期：2026-10-31。状态：已完成首轮源码审计；实际引入任一项时须更新本文件并在 `THIRD_PARTY_NOTICES.md` 落声明。
 
+## 已实际引入项（P3-01 实现记录，2026-10-31）
+
+| 候选 | 引入位置 | 保留/改写 | 适配 commit |
+|---|---|---|---|
+| R1 块级编辑合同 | `internal/authoring/blocks.go`（SplitBlocks 内容寻址块、FindBlock 选区唯一性、ReviseBlockCandidate/InsertBlockAfterCandidate 确定性重组） | 保留：块寻址与"按块 revise 与整章 revise 分离"、其余块逐字节不变；改写：不引入 SMTS 的项目状态/存储/HTTP 层，块级修改走本仓库候选+作者确认流，无隐式整章改写回退 | 本仓库提交见 docs/dual-pipeline-development-plan.md 第 7 节 P3-01/P3-02 行 |
+| R2 轻量检索 | `internal/shortstory/retrieval.go`（BM25+CJK bigram+整条预算打包） | 保留：算法逻辑、整条不截断、稳定并列保序；改写：语料改为短篇扁平知识条目，去掉实体/记忆章节模型 | 同上 P2-02 行 |
+
+按本文件第 5 节结论：SMTS 为 MIT，上述两个文件的引入须在 `THIRD_PARTY_NOTICES.md` 保留其版权与许可文本——该文件在首个发布物打包前（P5-04）建立，登记 Nigh/show-me-the-story @ f790187 的 MIT 声明。
+
 审计对象与方法：本仓库内克隆两个外部仓库的完整源码（位于 `refer/`，已 gitignore，不随本仓库分发），按计划第 3 节要求的字段逐项记录。本轮为静态源码审计 + 公开许可文本核对，未运行外部应用；下表"验收案例"为引入时必须通过的用例，不是已通过记录。
 
 | 固定项 | 值 |
