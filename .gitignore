@@ -68,3 +68,9 @@ models/embedding/*.gguf
 # Python 缓存
 __pycache__/
 *.pyc
+
+# 工作台前端依赖不入库（dist 构建产物随库，供无 node 环境托管）
+services/workbench/node_modules/
+# 工作台前端构建产物例外（随库托管，见 P4-01）
+!services/workbench/dist/
+!services/workbench/dist/**

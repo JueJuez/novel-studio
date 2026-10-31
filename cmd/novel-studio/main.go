@@ -44,6 +44,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "short-story" {
 		os.Exit(runShortStoryCommand(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "workbench" {
+		os.Exit(runWorkbenchCommand(os.Args[2:]))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "reader-metrics" {
 		opts, _, err := parseCLIOptions(nil)
 		if err != nil {
