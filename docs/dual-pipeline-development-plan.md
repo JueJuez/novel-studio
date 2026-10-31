@@ -200,8 +200,8 @@ P2 出口必须演示：创建短篇 → 确认结构 → 生成正文 → 定�
 |---|---|---|---|
 | P3-01 | 从 Show Me The Story 选择性适配块编辑/事实来源/校订逻辑，或按其合同实现，保留移植记录 | P0-02/P2；不复制全局配置、整套存储或隐式整章改写回退。已完成（2026-10-31）：internal/authoring/blocks.go——SplitBlocks 段落块内容寻址（\r\n 归一、中文标点不切分、同文本同 ID）、FindBlock 选区唯一性（重复段落=ErrAmbiguousBlock 显式冲突）、ReviseBlockCandidate/InsertBlockAfterCandidate 确定性重组（只替换/插入目标块，其余块逐字节不变并逐块复核，无隐式整章改写回退）；AnchorBlockFromContent 摘要取自块内容。未复制 SMTS 全局配置/存储/HTTP 层。移植记录已回写 docs/dual-pipeline-porting-audit.md（R1 引入记录；THIRD_PARTY_NOTICES.md 随 P5-04 建立）。测试 blocks_test.go，WSL2 Go 1.27.1 build/vet/gofmt/test 全通过 | 已完成 2026-10-31 |
 | P3-02 | 提供手改、AI 改写/扩写/续写、差异和逐项接受、版本回退成新草稿 | 未选区不受局部修改影响；相同段落多次出现、中文标点/换行和并发旧请求可安全处理。已完成（2026-10-31）：手改＝ProposeManual+确认（P1 既有）；AI 改写/扩写/续写＝internal/shortstory/revisions.go 三种修订类型走块级候选（改写/扩写替换目标块、续写在目标块后插入新块，提示词复用 shortstory-rewrite.md 合同）；差异＝internal/authoring/diff.go 段落级 LCS（rune 安全，CRLF/LF 等价，含汇总）；逐项接受＝AcceptSequence（已接受项幂等返回、待决项按序应用、基线过期显式冲突）；版本回退＝RevertToVersion（内容回到历史版本但版本 ID 全新、历史链不可变）。测试：blocks_test.go（未选区不受影响/重复段落/并发旧请求/乱序接受/回退幂等）+ revisions_test.go（三种修订 runner）| 已完成 2026-10-31 |
-| P3-03 | 把长篇接到版本、候选与来源视图，识别实际共同代码再抽取 | 依赖检查：共享包不引用管线；长篇旧数据/摘要/RAG 仍由原权威管理 | 待实施 |
-| P3-04 | 修改影响预览、来源陈旧标记、必要重审与终审失效 | 短篇全文重审；长篇尊重返工/rebase，不承诺无成本修改历史正史 | 待实施 |
+| P3-03 | 把长篇接到版本、候选与来源视图，识别实际共同代码再抽取 | 依赖检查：共享包不引用管线；长篇旧数据/摘要/RAG 仍由原权威管理。已完成（2026-10-31）：internal/authoring/longview.go——ProjectLongPipeline 把长篇 output/novel/chapters/*.md 投影为只读内容寻址版本视图（章号解析失败显式报错、目录缺失返回空视图、投影前后文件零变化有测试断言），不写长篇目录、不写 manifest、不新增审批点，长篇正史/摘要/RAG 仍由原权威管理，修改走原 rebase/返工路径；依赖契约＝internal/authoring/boundaries_test.go 用 go/parser 静态断言共享包（authoring/project/shortstory）不引用 host/agents/tools/store/cmd/services；实际共同代码盘点＝域哈希（domain.ComputeArcArtifactSHA256，已共享）、no-clobber 原子写（因依赖方向在 authoring 内独立实现，不强行抽象）、内容寻址版本概念——其余按计划不提前抽象。测试 longview/边界断言，WSL2 Go 1.27.1 全通过 | 已完成 2026-10-31 |
+| P3-04 | 修改影响预览、来源陈旧标记、必要重审与终审失效 | 短篇全文重审；长篇尊重返工/rebase，不承诺无成本修改历史正史。已完成（2026-10-31）：影响预览＝internal/shortstory/impact.go PreviewAcceptImpact（接受前列出将陈旧的来源、将失效的审阅、全文失效标记、下游依赖场景；基线落后直接给出阻断原因）；来源陈旧标记＝authoring StaleSourceReport（已确认但被推进甩下的来源+原因）与 RequiresReview（当前版本缺审阅即要求重审）；必要重审与终审失效＝P2-04 的 FinalizeGateCheck 已强制（返工→全文版本变化→旧终审/旧确认失效），本批补场景级 RequiresReview 闭环（补审后归零）。长篇侧不做任何写路径：只读投影（P3-03）+原返工/rebase 合同，不承诺无成本修改历史正史。测试 impact_test.go 覆盖预览各字段、阻断、陈旧报告与补审归零 | 已完成 2026-10-31 |
 
 ### P4：统一工作台与长篇作者确认
 
@@ -283,9 +283,9 @@ cd novel-studio
 
 ## 10. 当前状态与下一批入口
 
-- 已完成：本地基线与关键能力静态核查；外部项目公开资料、许可文本及部分源码核对；本计划及 README 入口；本地 `origin` fetch/push URL 修改；P0 全部四项（基线构建与检查、移植审计、作者确认边界定位、发行链核对，证据见第 7 节与 docs/design-audits/）；P1 全部四项（manifest/只读发现、短篇状态机与命令、版本/候选/确认/来源合同、模型适配器）；P2 全部四项 + 出口演示（TestP2ExitDemoFullLoopWithRecovery：创建→确认结构→生成→定向修改→接受候选→全文检查→作者确认→导出，中段重建 store 实例模拟关闭程序后恢复）；P3-01 块编辑合同（移植记录已回写）；P3-02 差异/逐项接受/版本回退与块级修订 runner（证据见第 7 节）。
-- 未完成：P3-03/P3-04 与 P4—P5 的执行与业务开发、云端实测、浏览器验收、作品评阅和派生版发布。
-- 下一批从 **P3-03/P3-04 → P4-01** 开始；把长篇接到版本/候选/来源视图并实现修改影响预览，随后进入统一工作台。
+- 已完成：本地基线与关键能力静态核查；外部项目公开资料、许可文本及部分源码核对；本计划及 README 入口；本地 `origin` fetch/push URL 修改；P0 全部四项（基线构建与检查、移植审计、作者确认边界定位、发行链核对，证据见第 7 节与 docs/design-audits/）；P1 全部四项（manifest/只读发现、短篇状态机与命令、版本/候选/确认/来源合同、模型适配器）；P2 全部四项 + 出口演示（TestP2ExitDemoFullLoopWithRecovery）；P3 全部四项（块编辑合同+移植记录回写、差异/逐项接受/版本回退、长篇只读投影+依赖边界契约、影响预览/陈旧标记/必要重审）（证据见第 7 节）。
+- 未完成：P4—P5 的执行与业务开发（统一工作台、长篇作者确认 Hook 实施、验收）、云端实测、浏览器验收、作品评阅和派生版发布。
+- 下一批从 **P4-01/P4-02 → P4-03** 开始；进入统一工作台（Go Web API + Svelte），随后实施长篇作者确认 Hook。
 - 执行协议：开发批次的任务选取、证据记录、提交推送与验收触发见 [dual-pipeline-automation.md](dual-pipeline-automation.md)；批次大小固定 2 个任务，每批完成即提交并推送。
 
 后续状态记录需附对应提交/检查结果/样本路径；保留原始正文、诊断和候选，不用任务勾选或自动评分替代交付证据。
