@@ -41,6 +41,8 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	mux.HandleFunc("GET /api/projects", s.handleProjects)
+	mux.HandleFunc("POST /api/projects", s.handleCreateProject)
+	mux.HandleFunc("POST /api/projects/{name}/author-gate", s.handleAuthorGate)
 	mux.HandleFunc("GET /api/projects/{name}", s.handleProjectDetail)
 	mux.HandleFunc("GET /api/projects/{name}/events", s.handleEvents)
 	mux.HandleFunc("GET /api/projects/{name}/stream", s.handleStream)

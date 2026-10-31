@@ -274,3 +274,40 @@ func TestWorkbenchStaticServing(t *testing.T) {
 		t.Fatal("health 检查失败")
 	}
 }
+
+func TestWorkbenchCreateProjectAndAuthorGate(t *testing.T) {
+	runsRoot, shortRoot := fixtureRunsRoot(t)
+	server := testServer(t, runsRoot)
+
+	// 新建协作长篇。
+	created := postJSON(t, server.URL+"/api/projects", map[string]any{
+		"name": "协作长篇", "title": "协作长篇", "kind": "long", "collaborative": true,
+	}, http.StatusOK)
+	if created["pipeline_kind"] != "long" || created["collaborative"] != true {
+		t.Fatalf("创建结果不符: %v", created)
+	}
+	// 重复创建 → 冲突。
+	postJSON(t, server.URL+"/api/projects", map[string]any{"name": "协作长篇", "title": "x", "kind": "long"}, http.StatusConflict)
+	// 未知 kind → 400。
+	postJSON(t, server.URL+"/api/projects", map[string]any{"name": "坏kind", "kind": "medium"}, http.StatusBadRequest)
+	// 短篇作品自动初始化状态。
+	detail := getJSON(t, server.URL+"/api/projects/雾城夜行", http.StatusOK)
+	if detail["state"] == nil {
+		t.Fatal("短篇创建后应已有状态")
+	}
+
+	// 作者确认门：短篇 403；协作长篇 200 并可被门禁查询命中。
+	postJSON(t, server.URL+"/api/projects/雾城夜行/author-gate",
+		map[string]string{"target_id": "long-chapter-1", "version_id": "v1"}, http.StatusForbidden)
+	approval := postJSON(t, server.URL+"/api/projects/协作长篇/author-gate",
+		map[string]string{"target_id": "long-chapter-1", "version_id": "render-body-x", "note": "章节确认"}, http.StatusOK)
+	if approval["version_id"] != "render-body-x" {
+		t.Fatalf("确认记录不符: %v", approval)
+	}
+	auth := authoring.Open(filepath.Dir(shortRoot) + "/协作长篇")
+	ok, err := auth.HasAuthorApproval("long-chapter-1", "render-body-x")
+	if err != nil || !ok {
+		t.Fatalf("门禁查询未命中: %v err=%v", ok, err)
+	}
+	_ = runsRoot
+}

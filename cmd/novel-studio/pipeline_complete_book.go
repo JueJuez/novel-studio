@@ -44,6 +44,12 @@ func completePipelineBook(st *store.Store) error {
 	if err != nil {
 		return err
 	}
+	// P4-03：协作长篇最终交付前的作者确认边界。交付稿按内容寻址，
+	// 正文返工后摘要变化 → 旧确认不命中，必须重新确认。
+	if err := requireLongAuthorGate(st.Dir(), longDeliverGateTarget,
+		domain.ComputeArcArtifactSHA256([]byte(manuscript))); err != nil {
+		return err
+	}
 	path := filepath.Join(st.Dir(), "正文.md")
 	if info, err := os.Lstat(path); err == nil {
 		if !info.Mode().IsRegular() {

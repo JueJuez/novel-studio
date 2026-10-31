@@ -412,6 +412,12 @@ func pipelineAdvanceChapterRenderPublished(
 	if err != nil {
 		return err
 	}
+	// P4-03：协作长篇在正文晋升为正史前的作者确认边界。所有发布调用
+	// 点都汇入本函数（P0-03 审计），未确认无法经 CLI/API/恢复旁路；
+	// 等待期间事务停在 actual_matched，不占执行锁。
+	if err := requireLongAuthorGate(liveOutputDir, longChapterGateTarget(frozen.Chapter), identity.TransactionID); err != nil {
+		return err
+	}
 	transactionID, err := pipelineRenderTransactionID(frozen)
 	if err != nil {
 		return err

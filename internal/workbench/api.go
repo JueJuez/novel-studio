@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chenhongyang/novel-studio/internal/authoring"
+	"github.com/chenhongyang/novel-studio/internal/project"
 	"github.com/chenhongyang/novel-studio/internal/shortstory"
 )
 
@@ -29,6 +30,84 @@ func decodeBody(w http.ResponseWriter, r *http.Request, target any) bool {
 		return false
 	}
 	return true
+}
+
+// handleCreateProject 新建作品（P4-04 统一入口）：显式选择管线，
+// 不接受在带旧作品特征的目录上创建（project.Create 拒绝并透传）。
+func (s *Server) handleCreateProject(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Name          string `json:"name"`
+		Title         string `json:"title"`
+		Kind          string `json:"kind"`
+		Language      string `json:"language"`
+		Collaborative bool   `json:"collaborative"`
+	}
+	if !decodeBody(w, r, &body) {
+		return
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		body.Name = body.Title
+	}
+	if body.Name == "" || filepath.Base(body.Name) != body.Name || body.Name == "." || body.Name == ".." {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("作品名不能为空且不能含路径分隔符"))
+		return
+	}
+	kind := project.PipelineKind(body.Kind)
+	if kind != project.PipelineLong && kind != project.PipelineShort {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("kind 必须显式为 short 或 long"))
+		return
+	}
+	runRoot := filepath.Join(s.RunsRoot, body.Name)
+	manifest, err := project.Create(runRoot, project.CreateOptions{
+		Title:         body.Title,
+		Language:      body.Language,
+		PipelineKind:  kind,
+		Collaborative: body.Collaborative,
+	})
+	if err != nil {
+		writeError(w, http.StatusConflict, err)
+		return
+	}
+	if kind == project.PipelineShort {
+		if _, _, err := shortstory.Create(runRoot, manifest, shortstory.Brief{Idea: "(待补充创意)"}); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, manifest)
+}
+
+// handleAuthorGate 记录协作长篇的作者确认（P4-03/P4-04）：确认对象是
+// 确切的目标与版本/事务标识；只有协作长篇 manifest 接受该意图。
+func (s *Server) handleAuthorGate(w http.ResponseWriter, r *http.Request) {
+	p, found, err := s.projectRef(r.PathValue("name"))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if !found {
+		writeError(w, http.StatusNotFound, fmt.Errorf("作品不存在"))
+		return
+	}
+	if p.Legacy || p.Manifest == nil || p.Manifest.PipelineKind != project.PipelineLong || !p.Manifest.Collaborative {
+		writeError(w, http.StatusForbidden, fmt.Errorf("作者确认门仅对协作长篇开放（kind=%q legacy=%v）", p.Kind(), p.Legacy))
+		return
+	}
+	var body struct {
+		TargetID  string `json:"target_id"`
+		VersionID string `json:"version_id"`
+		Note      string `json:"note"`
+	}
+	if !decodeBody(w, r, &body) {
+		return
+	}
+	auth := authoring.Open(p.Root)
+	approval, err := auth.RecordExternalAuthorApproval(body.TargetID, body.VersionID, body.Note)
+	if err != nil {
+		writeError(w, http.StatusConflict, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, approval)
 }
 
 // handleProposeManual 手改意图：内容经 ProposeManual 登记为候选。

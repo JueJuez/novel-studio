@@ -122,6 +122,67 @@ type AuthorApprovalState struct {
 	Record   *AuthorApproval
 }
 
+// RecordExternalAuthorApproval 为"版本标识不由本存储管理"的场景记录
+// 作者确认（如长篇管线的正文事务标识——其权威回执在长篇存储里）。与
+// RecordAuthorApproval 同样幂等；确认对象的可信度由调用方的门禁校验
+// 保证，本方法只负责持久化与查询。
+func (s *Store) RecordExternalAuthorApproval(targetID, versionID, note string) (*AuthorApproval, error) {
+	if strings.TrimSpace(targetID) == "" || strings.TrimSpace(versionID) == "" {
+		return nil, fmt.Errorf("authoring: 外部确认需要 target_id 与 version_id")
+	}
+	approval := &AuthorApproval{
+		SchemaVersion: SchemaVersionV1,
+		ApprovalID:    ComputeApprovalID(targetID, versionID, "", ApprovedByAuthor),
+		TargetID:      targetID,
+		VersionID:     versionID,
+		RulesSummary:  "external-gate",
+		ApprovedBy:    ApprovedByAuthor,
+		Note:          note,
+		CreatedAt:     time.Now().UTC().Format(time.RFC3339),
+	}
+	path := s.approvalPath(targetID, approval.ApprovalID)
+	if existing, statErr := os.ReadFile(path); statErr == nil {
+		var have AuthorApproval
+		if err := json.Unmarshal(existing, &have); err != nil || have.VersionID != approval.VersionID {
+			return nil, fmt.Errorf("authoring: 确认 %s 已存在且内容不同", approval.ApprovalID)
+		}
+		return &have, nil
+	} else if !errors.Is(statErr, os.ErrNotExist) {
+		return nil, statErr
+	}
+	if err := s.writeRecord(path, approval); err != nil {
+		return nil, err
+	}
+	return approval, nil
+}
+
+// HasAuthorApproval 报告某个（目标，版本）组合是否已有作者确认记录。
+// 供长篇协作边界的门禁查询：确认对象是确切版本/事务标识，正文或合同
+// 变化后旧确认天然不命中。
+func (s *Store) HasAuthorApproval(targetID, versionID string) (bool, error) {
+	entries, err := os.ReadDir(s.approvalsDir(targetID))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+	for _, entry := range entries {
+		raw, err := os.ReadFile(filepath.Join(s.approvalsDir(targetID), entry.Name()))
+		if err != nil {
+			return false, err
+		}
+		var approval AuthorApproval
+		if err := json.Unmarshal(raw, &approval); err != nil {
+			return false, fmt.Errorf("authoring: 确认记录 %s 解析失败: %w", entry.Name(), err)
+		}
+		if approval.TargetID == targetID && approval.VersionID == versionID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // AuthorApprovalForHead 判定当前 head 是否已被作者确认：只有确认记录
 // 绑定的版本 == head 版本才算有效；head 推进后旧确认自动失效。
 func (s *Store) AuthorApprovalForHead(targetID string) (*AuthorApprovalState, error) {
