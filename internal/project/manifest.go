@@ -82,6 +82,68 @@ type CreateOptions struct {
 	Collaborative bool
 }
 
+// AdoptOptions 是旧长篇作品显式接入协作（P4-04 adopt 路径）的显式参数。
+// 标题由作者在接入时命名，不从旧产物推断；管线固定 long、协作固定
+// true——adopt 的唯一目的就是把旧长篇接入作者确认边界。
+type AdoptOptions struct {
+	Title    string
+	Language string // 空值取 "zh"
+}
+
+// Adopt 为无 manifest 的旧长篇作品补写 manifest，显式接入协作长篇。
+// 仅当目录确实是旧作品（有 legacy 特征、无 manifest）且引擎布局是标准
+// output/novel 时允许：非标准布局接入后门禁与发现无法定位引擎目录，
+// 显式拒绝（仍可只读查看）。空闲边界（无进行中返工、无执行租约）由
+// 调用方在入口校验；已接入作品拒绝重复 adopt。
+func Adopt(runRoot string, opts AdoptOptions) (*Manifest, error) {
+	if strings.TrimSpace(opts.Title) == "" {
+		return nil, fmt.Errorf("project adopt: title 不能为空（接入时由作者显式命名）")
+	}
+	if info, err := os.Stat(filepath.Join(runRoot, ManifestFileName)); err == nil && !info.IsDir() {
+		return nil, fmt.Errorf("project adopt: %s 已存在，拒绝重复接入", filepath.Join(runRoot, ManifestFileName))
+	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	engineDir, legacy, err := legacyEngineDir(runRoot)
+	if err != nil {
+		return nil, err
+	}
+	if !legacy {
+		return nil, fmt.Errorf("project adopt: %s 不是旧作品，请用 Create 显式新建", runRoot)
+	}
+	if engineDir != filepath.Join(runRoot, "output", "novel") {
+		return nil, fmt.Errorf("project adopt: 旧作品引擎目录 %s 不是标准 output/novel 布局，拒绝接入（保持只读）", engineDir)
+	}
+	language := strings.TrimSpace(opts.Language)
+	if language == "" {
+		language = "zh"
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	manifest := &Manifest{
+		SchemaVersion:  SchemaVersionV1,
+		ProjectID:      newProjectID(),
+		Title:          strings.TrimSpace(opts.Title),
+		Language:       language,
+		PipelineKind:   PipelineLong,
+		Collaborative:  true,
+		EngineProtocol: PipelineLong.engineProtocol(),
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	if err := manifest.Validate(); err != nil {
+		return nil, err
+	}
+	raw, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	raw = append(raw, '\n')
+	if err := writeFileNoClobber(filepath.Join(runRoot, ManifestFileName), raw); err != nil {
+		return nil, fmt.Errorf("project adopt: 写入失败: %w", err)
+	}
+	return manifest, nil
+}
+
 // Create 在作品根目录写入 project.json。目录里已存在 manifest、或该目录
 // 带有旧作品特征（legacy 标记）时拒绝创建：旧工程不写回、不重分管线。
 func Create(runRoot string, opts CreateOptions) (*Manifest, error) {

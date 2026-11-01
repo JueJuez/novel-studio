@@ -6,7 +6,9 @@
 //   - 事件以服务端持久工件为准（状态机历史、候选、确认记录），SSE
 //     只推当前摘要，断线后客户端用全量接口校准，刷新/重启不丢等待
 //     和候选；
-//   - legacy/long 作品只读查看，意图端点显式拒绝；
+//   - legacy 作品只读查看，意图端点显式拒绝；协作长篇的写路径仅限
+//     作者确认门（author-gate）与推进意图（advance，经命令层注入的
+//     既有编排器），修改旧长篇仍不得绕过原 sealed/rebase 边界；
 //   - 不显示原始思维链——事件与详情不含模型内部推理。
 package workbench
 
@@ -17,6 +19,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/chenhongyang/novel-studio/internal/authoring"
@@ -26,14 +29,22 @@ import (
 
 // Server 是工作台 API 服务。StaticDir 非空时托管工作台前端构建产物
 // （services/workbench/dist，可选；非 /api 路径回退到静态文件）。
+// PipelineRunner 由命令层注入（P4-04 长篇编排入口）：以作品根为基准
+// 执行既有 pipeline 阶段入口，返回合并输出尾部与错误；nil 时推进意图
+// 端点显式报告编排器未接入。
 type Server struct {
 	RunsRoot  string
 	StaticDir string
+
+	PipelineRunner func(projectRoot string, args []string) (string, error)
+
+	advanceMu     sync.Mutex
+	advanceStatus map[string]*AdvanceStatus
 }
 
 // New 构建工作台服务。
 func New(runsRoot string) *Server {
-	return &Server{RunsRoot: runsRoot}
+	return &Server{RunsRoot: runsRoot, advanceStatus: map[string]*AdvanceStatus{}}
 }
 
 // Handler 返回全部路由。
@@ -43,6 +54,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/projects", s.handleProjects)
 	mux.HandleFunc("POST /api/projects", s.handleCreateProject)
 	mux.HandleFunc("POST /api/projects/{name}/author-gate", s.handleAuthorGate)
+	mux.HandleFunc("POST /api/projects/{name}/adopt", s.handleAdopt)
+	mux.HandleFunc("GET /api/projects/{name}/advance", s.handleAdvance)
+	mux.HandleFunc("POST /api/projects/{name}/advance", s.handleAdvance)
 	mux.HandleFunc("GET /api/projects/{name}", s.handleProjectDetail)
 	mux.HandleFunc("GET /api/projects/{name}/events", s.handleEvents)
 	mux.HandleFunc("GET /api/projects/{name}/stream", s.handleStream)

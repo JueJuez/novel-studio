@@ -29,6 +29,17 @@ func pipelineSeal(opts cliOptions, flags pipelineFlags) (returnErr error) {
 	if err != nil {
 		return err
 	}
+	// P4-03：协作长篇计划封存前的作者确认边界。封存、激活与弧计划清单
+	// 写入全部汇入本函数唯一咽喉（SealGenerationExpected/ActivateSealed-
+	// Generation/savePipelineArcPlanningManifest 仅此处调用），未确认无法
+	// 经 CLI/API/恢复旁路；确认绑定封存代次的内容标识（generation
+	// digest），重推演改变计划后旧确认不再命中。检查在任何执行锁获取之前
+	// 完成——等待作者不占锁，确认落盘后重跑在同一标识上幂等续作。
+	if err := requireLongAuthorGate(cfg.OutputDir,
+		longSealGateTarget(identity.Generation.GenerationID),
+		identity.Generation.GenerationDigest); err != nil {
+		return err
+	}
 	progress, err := st.Progress.Load()
 	if err != nil || progress == nil {
 		return fmt.Errorf("seal 读取 progress: %w", err)
@@ -347,6 +358,21 @@ func pipelinePromote(opts cliOptions, flags pipelineFlags) (returnErr error) {
 	if actualPreStateRoot != bundle.ProjectedPreStateRoot {
 		return fmt.Errorf("promote 锁内第 %d 章实际前态与 sealed projected 前态不一致", chapter)
 	}
+	planSemanticDigest, err := domain.ComputeChapterPlanV2Digest(bundle.ChapterPlan)
+	if err != nil {
+		return fmt.Errorf("promote 计算第 %d 章计划语义摘要: %w", chapter, err)
+	}
+	// P4-03：协作长篇初始化产物（章节计划提升）的作者确认边界。提升把
+	// sealed 计划落成权威 receipt/cursor 并安装渲染输入，是初始化产物
+	// 落地的唯一咽喉（projected.Promote 仅此处调用）；确认绑定 bundle 与
+	// 计划语义摘要的确定性键——promotion receipt digest 含提升时间戳，
+	// 不能作为可预记录的确认对象。重推演/返工改变任一摘要后旧确认不再
+	// 命中；等待以哨兵错误中止并释放执行锁，确认后重跑幂等续作。
+	if err := requireLongAuthorGate(cfg.OutputDir,
+		longPromoteGateTarget(sealed.GenerationID, chapter),
+		longPromoteGateVersion(bundle.BundleDigest, planSemanticDigest)); err != nil {
+		return err
+	}
 	if err := validatePipelineProjectAllLiveCanonForPromotion(
 		cfg.OutputDir,
 		progress,
@@ -397,10 +423,6 @@ func pipelinePromote(opts cliOptions, flags pipelineFlags) (returnErr error) {
 		return err
 	}
 	renderDependencyRoot := pipelineProjectAllDigest(renderDependencies)
-	planSemanticDigest, err := domain.ComputeChapterPlanV2Digest(bundle.ChapterPlan)
-	if err != nil {
-		return err
-	}
 
 	var promotion domain.PromotionReceiptV2
 	alreadyPromoted := cursor.ActivePromotedChapter == chapter

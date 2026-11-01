@@ -22,10 +22,13 @@ import (
 //     都必须穿过同一函数，未确认无法旁路。
 //   - 等待确认不占执行锁：门禁以错误中止当前调用，正文事务停在原阶段；
 //     作者确认落盘后重跑即可继续（恢复路径重验版本）。
-//   - 本批已接线：正文发布前（pipelineAdvanceChapterRenderPublished，
+//   - 四个边界全部接线：初始化产物确认（pipelinePromote）、计划封存前
+//     （pipelineSeal）、正文发布前（pipelineAdvanceChapterRenderPublished，
 //     全部发布调用点的唯一咽喉）与最终交付前（completePipelineBook，
-//     正文.md 导出）。封存前与初始化产物确认两个边界在 P0-03 已定位，
-//     留待下一批与封存事务一起接线。
+//     正文.md 导出）。封存与提升的写入各自只有单一调用点（grep 核验：
+//     SealGenerationExpected/ActivateSealedGeneration/savePipelineArcPlanning-
+//     Manifest/projected.Promote 均仅在对应阶段函数内调用），两个阶段
+//     函数即唯一咽喉。
 
 // ErrLongAuthorConfirmationRequired 是协作长篇等待作者确认的哨兵错误：
 // 调用方可据此区分「等待作者」与一般失败。
@@ -93,3 +96,22 @@ func longChapterGateTarget(chapter int) string {
 
 // longDeliverGateTarget 是最终交付边界（正文.md）的门禁目标键。
 const longDeliverGateTarget = "long-deliver-manuscript"
+
+// longSealGateTarget 是计划封存边界的门禁目标键。封存代次 ID 内容寻址，
+// 计划变化必然改变目标键。
+func longSealGateTarget(generationID string) string {
+	return "long-seal-" + generationID
+}
+
+// longPromoteGateTarget 是初始化产物（章节计划提升）边界的门禁目标键。
+func longPromoteGateTarget(generationID string, chapter int) string {
+	return "long-promote-" + generationID + "-ch" + strconv.Itoa(chapter)
+}
+
+// longPromoteGateVersion 是提升边界的确认版本键：bundle 摘要 + 计划语义
+// 摘要的复合。两者都是确定性内容摘要——promotion receipt digest 含提升
+// 时间戳，跨运行不稳定，不能作为可预记录的确认对象；本键在重推演或
+// 计划返工后必然变化，旧确认天然失效。
+func longPromoteGateVersion(bundleDigest, planDigest string) string {
+	return bundleDigest + "/" + planDigest
+}

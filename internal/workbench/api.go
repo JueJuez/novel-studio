@@ -12,6 +12,7 @@ import (
 	"github.com/chenhongyang/novel-studio/internal/authoring"
 	"github.com/chenhongyang/novel-studio/internal/project"
 	"github.com/chenhongyang/novel-studio/internal/shortstory"
+	"github.com/chenhongyang/novel-studio/internal/store"
 )
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
@@ -30,6 +31,62 @@ func decodeBody(w http.ResponseWriter, r *http.Request, target any) bool {
 		return false
 	}
 	return true
+}
+
+// handleAdopt 把无 manifest 的旧长篇作品显式接入协作管线（P4-04 adopt
+// 路径）。接入是显式动作：标题由作者在请求中命名；空闲边界由本入口
+// 机械校验——存在进行中返工或活动执行租约时拒绝写 manifest，避免在
+// 运行中的旧作品上改变合同。管线固定 long、协作固定 true。
+func (s *Server) handleAdopt(w http.ResponseWriter, r *http.Request) {
+	p, found, err := s.projectRef(r.PathValue("name"))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if !found {
+		writeError(w, http.StatusNotFound, fmt.Errorf("作品不存在"))
+		return
+	}
+	if p.Manifest != nil {
+		writeError(w, http.StatusConflict, fmt.Errorf("作品已接入 manifest，拒绝重复 adopt"))
+		return
+	}
+	if !p.Legacy {
+		writeError(w, http.StatusConflict, fmt.Errorf("目录不是旧作品，新建请用 POST /api/projects"))
+		return
+	}
+	var body struct {
+		Title    string `json:"title"`
+		Language string `json:"language"`
+	}
+	if !decodeBody(w, r, &body) {
+		return
+	}
+	st := store.NewStore(p.EngineDir)
+	progress, err := st.Progress.Load()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("空闲边界校验失败（progress）: %w", err))
+		return
+	}
+	if progress != nil && len(progress.PendingRewrites) > 0 {
+		writeError(w, http.StatusConflict, fmt.Errorf("作品存在进行中返工 %v，不在空闲边界，拒绝接入", progress.PendingRewrites))
+		return
+	}
+	lock, err := st.Runtime.InspectPipelineExecution()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("空闲边界校验失败（执行租约）: %w", err))
+		return
+	}
+	if lock != nil {
+		writeError(w, http.StatusConflict, fmt.Errorf("作品存在活动执行租约（owner=%s），不在空闲边界，拒绝接入", lock.Owner))
+		return
+	}
+	manifest, err := project.Adopt(p.Root, project.AdoptOptions{Title: body.Title, Language: body.Language})
+	if err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, manifest)
 }
 
 // handleCreateProject 新建作品（P4-04 统一入口）：显式选择管线，
