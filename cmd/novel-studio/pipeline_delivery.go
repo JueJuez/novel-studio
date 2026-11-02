@@ -1345,7 +1345,13 @@ func pipelineOpeningFoundationDigest(outputDir string) (string, error) {
 	for _, rel := range []string{"outline.json", "layered_outline.json"} {
 		raw, err := os.ReadFile(filepath.Join(outputDir, rel))
 		if err != nil {
-			return "", fmt.Errorf("读取 Architect 开篇产物 %s 失败: %w", rel, err)
+			// layered_outline.json 是可选产物：architect_check 把 outline.json
+			// 视为其兼容视图，短篇级规划只产 flat outline。缺失时按空输入
+			// 参与摘要，而不是阻塞 --refresh-architect（P5-02 长篇窗口实测的
+			// catch-22：唯一缺的就是 layered，refresh 又要求它已存在）。
+			if rel != "layered_outline.json" || !os.IsNotExist(err) {
+				return "", fmt.Errorf("读取 Architect 开篇产物 %s 失败: %w", rel, err)
+			}
 		}
 		_, _ = h.Write(raw)
 	}
