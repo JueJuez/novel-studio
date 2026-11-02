@@ -122,3 +122,11 @@ C6 门禁链 8 轮均止于 project-all 规划写入：`tool precondition failed
 性质判定：与 §7 的 non_negotiables 同类——**作者侧合同完整性问题**（规划必须满足项目规则声明的必选字段），非引擎缺陷。修复路径＝补齐这些字段（经 compass/规划修复或重规划时点名），或修订 web_reference_brief 项目规则本身（若该规则对本窗口样稿过重）。该路径需 rebase 前置，下批执行：修订/补齐 → rebase4 → 链路续推。
 
 累计门禁链测绘（§6/§7/§8/§10/§13）：五层发现全部为合同完整性/模式适配类，引擎保护机制（章零门禁、rebase 回执、architect-check、角色可见性）全程按设计工作。窗口样稿的推进 = 逐层满足合同的迭代，每层都有测试或数据留痕。
+
+## 14. frozen 合同绑定 producer 指纹；reasoning 升级需 rebase（2026-11-03 收批）
+
+两步定位：
+1. batch4 必填合同确认：8 个字段（emotional_logic 等）是 writer.md 长篇逐章 plan_details 的 batch4 档案（项目规则/搁置协议：只补 finalize 点名的字段）。deepseek-v4-flash 在 reasoning=medium 下 8 轮未能收敛 batch4。
+2. reasoning 升级为 high 后被 **frozen 生成合同**拒绝（"frozen producer/model/source dependency drift"）——生成代次冻结了 producer/模型/源依赖指纹，运行中改配置即漂移，恢复路径正确拒绝。
+
+正路：再走 rebase-all（rebase4）以 high 冻结新代次。本批已启动 rebase4 + zero-init + 链路自治序列（30 次尝试预算）。**策略结论**：长篇窗口的逐层收敛每层都消耗多轮模型调用，reasoning 档位应在 rebase（新代次冻结点）时一次定对；运行中调档会触发 frozen 漂移拒绝（保护正确）。
