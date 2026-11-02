@@ -114,3 +114,11 @@ Owner：ouyang。状态：生效（P5-02 进行中，本批为短篇部分；长
 2. **类型化资源两轮升级**（PRE 13c25d49→330ca18c→f822cade，留痕）：legacy 字符串 1:1 类型化 7 条 + 粒度补齐（遥测读数序列/设备留档卷宗/值守位代号台账/气闸压差表/环段作业灯/维护工具/个人物品柜/当班记录夹）。途中踩坑并修正：perception kind 仅限 unknown/last_observed/reported/estimated/unaware（readable 非法）；last_observed 要求有据金额；inspectable_surfaces 仅允许 container_exterior/seal_exterior 字面量。
 3. **rebase3 全链通过**：REBASE3_EXIT=0（新回执锚定当前 foundation）→ zero-init 首轮过 → **rehearse-arc 首次 ready（RH3_EXIT=0）**——material/contract 双清单全绿，resources 缺口正式闭合。
 4. 链路现处 project-all V1A1 第 1/3 章（世界推演→POV 计划→冻结渲染包）。作者门禁将在 seal 与正文发布边界触发，运行器代位确认口径不变。§11 的 ready 判定语义设计点在资源补齐后未再复现（material 全绿即 ready），暂无需引擎改动。
+
+## 13. 逐章推演的第 5 项发现：web_reference_brief 必选规划字段（2026-11-03 收批）
+
+C6 门禁链 8 轮均止于 project-all 规划写入：`tool precondition failed`——项目规则 `meta/web_reference_brief` 要求规划点名 `emotional_logic / anti_ai_execution_plan / reader_reward_plan / retention_plan / ending_delivery_plan / reader_entertainment_plan / longform_opening / trend_language_plan` 等字段（非可选项）。重规划的大纲（源自执行会话的精简 prompt）缺这些必选字段。
+
+性质判定：与 §7 的 non_negotiables 同类——**作者侧合同完整性问题**（规划必须满足项目规则声明的必选字段），非引擎缺陷。修复路径＝补齐这些字段（经 compass/规划修复或重规划时点名），或修订 web_reference_brief 项目规则本身（若该规则对本窗口样稿过重）。该路径需 rebase 前置，下批执行：修订/补齐 → rebase4 → 链路续推。
+
+累计门禁链测绘（§6/§7/§8/§10/§13）：五层发现全部为合同完整性/模式适配类，引擎保护机制（章零门禁、rebase 回执、architect-check、角色可见性）全程按设计工作。窗口样稿的推进 = 逐层满足合同的迭代，每层都有测试或数据留痕。
