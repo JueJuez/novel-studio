@@ -11,10 +11,12 @@ import (
 	"github.com/chenhongyang/novel-studio/internal/shortstory"
 )
 
-// runShortStoryCommand 实现 `novel-studio short-story init|status|resume`：
-// 双管线的短篇最小命令入口。init 显式创建 short 管线作品（版本化 manifest
+// runShortStoryCommand 实现 `novel-studio short-story init|status|resume|generate|confirm|candidates|finalize`：
+// 双管线的短篇命令入口。init 显式创建 short 管线作品（版本化 manifest
 // + 短篇状态），status 列出 runs 根下全部作品与管线分类，resume 是恢复
-// 入口（加载持久化状态并打印续作摘要）。长篇入口不受影响，仍走原调度。
+// 入口（加载持久化状态并打印续作摘要），generate/confirm/candidates/finalize
+// 是生成驱动（P5-02 使能项：runner 全部复用 internal/shortstory 库函数，
+// 生成产物一律登记为候选，作者确认显式收口）。长篇入口不受影响，仍走原调度。
 func runShortStoryCommand(argv []string) int {
 	if len(argv) == 0 || hasHelpToken(argv) {
 		printShortStoryUsage(os.Stdout)
@@ -28,6 +30,20 @@ func runShortStoryCommand(argv []string) int {
 		return runShortStoryStatus(rest)
 	case "resume":
 		return runShortStoryResume(rest)
+	case "generate":
+		return runShortStoryGenerate(rest)
+	case "confirm":
+		return runShortStoryConfirm(rest)
+	case "candidates":
+		return runShortStoryCandidates(rest)
+	case "reject":
+		return runShortStoryReject(rest)
+	case "waive":
+		return runShortStoryWaive(rest)
+	case "issues":
+		return runShortStoryIssues(rest)
+	case "finalize":
+		return runShortStoryFinalize(rest)
 	default:
 		fmt.Fprintf(os.Stderr, "short-story: 未知子命令 %q\n\n", sub)
 		printShortStoryUsage(os.Stderr)
@@ -40,6 +56,11 @@ func printShortStoryUsage(w *os.File) {
 	fmt.Fprintln(w, "  novel-studio short-story init --title <书名> --prompt \"<创意>\" [--language zh] [--collaborative] [--dir data/runs]")
 	fmt.Fprintln(w, "  novel-studio short-story status [--dir data/runs]   # 列出作品与管线分类（short/long/legacy 只读）")
 	fmt.Fprintln(w, "  novel-studio short-story resume --dir <作品根>       # 恢复短篇状态并打印续作摘要")
+	fmt.Fprintln(w, "  novel-studio short-story generate --dir <作品根> --stage structure|scenes|draft|review [--scene N] [--budget-range \"[5000, 30000]\"] [--config p] [--timeout-seconds 900]")
+	fmt.Fprintln(w, "  novel-studio short-story candidates --dir <作品根> [--target <t>]    # 列待决候选")
+	fmt.Fprintln(w, "  novel-studio short-story reject --dir <作品根> --target <t> --candidate <id> --reason <理由>  # 拒绝候选（正文不变）")
+	fmt.Fprintln(w, "  novel-studio short-story confirm --dir <作品根> --target <t> --candidate <id> [--note ...]  # 作者确认（Accept+确认绑定，推进状态机）")
+	fmt.Fprintln(w, "  novel-studio short-story finalize --dir <作品根>     # 终审门禁 → 导出 Markdown/TXT+清单+备份")
 }
 
 func runShortStoryInit(argv []string) int {

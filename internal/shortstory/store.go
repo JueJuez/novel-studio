@@ -229,3 +229,17 @@ func writeStateFile(path string, state *State) error {
 	}
 	return os.Rename(tmp, path)
 }
+
+// LoadBrief 读取初始化时落盘的创意（brief）工件。brief 只在 init 写入
+// 一次（rev=1，修稿循环不回写 brief），路径确定。
+func (s *Store) LoadBrief() (*Brief, error) {
+	raw, err := os.ReadFile(filepath.Join(s.dir, ArtifactsDirName, "brief", "brief.1.json"))
+	if err != nil {
+		return nil, fmt.Errorf("shortstory brief: %w", err)
+	}
+	var brief Brief
+	if err := json.Unmarshal(raw, &brief); err != nil {
+		return nil, fmt.Errorf("shortstory brief: 解析失败: %w", err)
+	}
+	return &brief, nil
+}

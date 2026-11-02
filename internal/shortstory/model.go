@@ -16,6 +16,18 @@ import (
 // 真实云端连通验证单列在 P5-02 与最终验收，本文件不发起真实调用。
 type ModelRuntime struct {
 	models *bootstrap.ModelSet
+	// thinking 是配置解析出的角色推理强度（角色级 → 顶层默认 → 空）。
+	// 长篇经 agents 层应用同一配置（build.go roleThinking）；短篇直连
+	// ChatModel，必须在本包等价应用，否则 off/low 被静默忽略——P5-02
+	// 实测 deepseek-v4-flash 推理耗尽全部输出上限，facts 响应为空。
+	thinking agentcore.ThinkingLevel
+}
+
+// shortStoryThinkingLevels 与长篇侧 agents.ParseThinkingLevel 接受的值
+// 保持一致；非法值视为未配置（不覆盖模型默认）。
+var shortStoryThinkingLevels = map[string]bool{
+	"off": true, "low": true, "medium": true, "high": true,
+	"xhigh": true, "max": true, "ultra": true,
 }
 
 // LoadModelRuntime 用现有配置体系加载模型路由集合。
@@ -28,16 +40,46 @@ func LoadModelRuntime(configPath string) (*ModelRuntime, error) {
 	if err != nil {
 		return nil, fmt.Errorf("shortstory model: 构建模型集合失败: %w", err)
 	}
-	return &ModelRuntime{models: set}, nil
+	runtime := &ModelRuntime{models: set}
+	if level := cfg.ResolveReasoningEffort("writer"); shortStoryThinkingLevels[level] {
+		runtime.thinking = agentcore.ThinkingLevel(level)
+	}
+	return runtime, nil
 }
 
 // ForRole 按现有路由语义取模型（role 即 ModelSet 的 purpose/role 标识，
-// 例如 "shortstory-draft"）。
+// 例如 "shortstory-draft"）。配置了推理强度时返回附加该选项的装饰模型。
 func (r *ModelRuntime) ForRole(role string) agentcore.ChatModel {
 	if r == nil || r.models == nil {
 		return nil
 	}
-	return r.models.ForDefaultPurpose(role)
+	inner := r.models.ForDefaultPurpose(role)
+	if r.thinking == "" {
+		return inner
+	}
+	return thinkingModel{inner: inner, thinking: r.thinking}
+}
+
+// thinkingModel 给底层模型的所有调用统一附加 WithThinking 选项。
+type thinkingModel struct {
+	inner    agentcore.ChatModel
+	thinking agentcore.ThinkingLevel
+}
+
+func (m thinkingModel) Generate(ctx context.Context, messages []agentcore.Message, tools []agentcore.ToolSpec, opts ...agentcore.CallOption) (*agentcore.LLMResponse, error) {
+	return m.inner.Generate(ctx, messages, tools, m.withThinking(opts)...)
+}
+
+func (m thinkingModel) GenerateStream(ctx context.Context, messages []agentcore.Message, tools []agentcore.ToolSpec, opts ...agentcore.CallOption) (<-chan agentcore.StreamEvent, error) {
+	return m.inner.GenerateStream(ctx, messages, tools, m.withThinking(opts)...)
+}
+
+func (m thinkingModel) SupportsTools() bool {
+	return m.inner.SupportsTools()
+}
+
+func (m thinkingModel) withThinking(opts []agentcore.CallOption) []agentcore.CallOption {
+	return append(append([]agentcore.CallOption(nil), opts...), agentcore.WithThinking(m.thinking))
 }
 
 // StageRequest 是一次短篇生成调用的输入。

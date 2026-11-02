@@ -64,7 +64,8 @@ func AssembleReviewRequest(prompts assets.Prompts, targetID, content string, str
 		Purpose:      "shortstory-review-" + targetID,
 		SystemPrompt: prompts.ShortStoryReview,
 		UserPrompt:   userPrompt,
-		MaxTokens:    4096,
+		// 五类 issue 报告含逐字引用，4K 输出上限偏紧（P5-02 实测经验）。
+		MaxTokens: 8192,
 	}, nil
 }
 
@@ -138,7 +139,46 @@ func RecordReview(auth *authoring.Store, report *ReviewReport) error {
 	if err != nil {
 		return err
 	}
-	return auth.AcceptSource(report.TargetID, ref.SourceID)
+	if err := auth.AcceptSource(report.TargetID, ref.SourceID); err != nil {
+		return err
+	}
+	// blocker 级 issue 逐条登记为「未决来源」：交付门禁要求作者对每条
+	// blocker 终裁——拒绝（作者裁定不成立/不构成交付障碍）即豁免，接受
+	// 或保持未决都阻断交付。作者权力显式留痕，机械门禁本身不变。
+	for _, issue := range report.Issues {
+		if issue.Severity != "blocker" {
+			continue
+		}
+		issueText, err := MarshalCanonical(issue)
+		if err != nil {
+			return err
+		}
+		if _, err := auth.RecordSource(report.TargetID, report.ContentVersionID, authoring.SourceReviewIssue, issue.SceneIndex, "", issueText); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ReviewIssueSourceID 重导某条 blocker issue 的来源 ID（与 RecordReview
+// 的登记口径字节一致），供工作台/CLI 列出待裁项与作者豁免。
+func ReviewIssueSourceID(auth *authoring.Store, report *ReviewReport, issue ReviewIssue) (string, error) {
+	issueText, err := MarshalCanonical(issue)
+	if err != nil {
+		return "", err
+	}
+	return authoring.ComputeSourceID(report.TargetID, report.ContentVersionID, authoring.SourceReviewIssue, issue.SceneIndex, "", issueText), nil
+}
+
+// ReviewIssueWaived 报告某条 blocker 是否已被作者豁免（其 issue 来源被
+// 作者拒绝）。来源按内容寻址重导：版本推进后旧豁免自动失效。
+func ReviewIssueWaived(auth *authoring.Store, report *ReviewReport, issue ReviewIssue) (bool, error) {
+	sourceID, err := ReviewIssueSourceID(auth, report, issue)
+	if err != nil {
+		return false, err
+	}
+	// SourceDecision 对读取失败/未决都返回空串——空串即阻断，天然 fail-closed。
+	return auth.SourceDecision(report.TargetID, sourceID) == "rejected", nil
 }
 
 // LoadLatestReview 读取目标上绑定当前 head 版本的最近审阅报告。
@@ -177,7 +217,8 @@ func ExtractFactsRequest(prompts assets.Prompts, scene Scene, draftContent strin
 		Purpose:      fmt.Sprintf("shortstory-facts-scene-%d", scene.Index),
 		SystemPrompt: prompts.ShortStoryFacts,
 		UserPrompt:   fmt.Sprintf("## 场景计划\n\n%s\n\n## 正文\n\n%s", mustSceneJSON(scene), draftContent),
-		MaxTokens:    2048,
+		// P5-02 实测：长草稿的 facts JSON 在 4K 输出被截断。
+		MaxTokens: 8192,
 	}, nil
 }
 
@@ -228,5 +269,15 @@ func RunExtraction(ctx context.Context, model agentcore.ChatModel, auth *authori
 	if err != nil {
 		return nil, nil, err
 	}
-	return ParseFactsResponse(result.Text, auth, targetID, versionID, scene.Index)
+	facts, refs, err := ParseFactsResponse(result.Text, auth, targetID, versionID, scene.Index)
+	if err != nil {
+		// 带上原始响应摘录与用量，便于区分「推理耗尽输出」与格式漂移
+		// （P5-02 实测：reasoning 模型可能在长思考后输出为空）。
+		snippet := result.Text
+		if len(snippet) > 200 {
+			snippet = snippet[:200]
+		}
+		return nil, nil, fmt.Errorf("%w（usage=%+v resp=%q）", err, result.Usage, snippet)
+	}
+	return facts, refs, nil
 }

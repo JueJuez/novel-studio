@@ -234,6 +234,37 @@ func TestChatReturnsStructuredValidationError(t *testing.T) {
 	}
 }
 
+func TestBuildRequestDeepSeekThinkingDisabledMapsToOff(t *testing.T) {
+	provider := mustProvider(t)
+	// DeepSeek 混合推理模型属于 reasoning 分类，且禁用值走 "off" 而非
+	// OpenAI 的 "none"（代理只接受 off|low|medium|high|xhigh|max）。
+	maxTokens := 100
+	out, err := provider.buildRequest(&litellm.Request{
+		Model:     "deepseek/deepseek-v4-flash",
+		MaxTokens: &maxTokens,
+		Messages:  []litellm.Message{litellm.UserText("hi")},
+		Thinking:  &litellm.Thinking{Mode: litellm.ThinkingDisabled},
+	}, false)
+	if err != nil {
+		t.Fatalf("deepseek thinking disabled rejected: %v", err)
+	}
+	if out.ReasoningEffort != "off" {
+		t.Fatalf("reasoning_effort = %q, want off", out.ReasoningEffort)
+	}
+	if out.MaxCompletionTokens == nil || *out.MaxCompletionTokens != 100 {
+		t.Fatalf("deepseek reasoning model should use max_completion_tokens, got %v", out.MaxCompletionTokens)
+	}
+	// 非 reasoning 分类模型依旧拒绝 thinking。
+	_, err = provider.buildRequest(&litellm.Request{
+		Model:    "gpt-4.1",
+		Messages: []litellm.Message{litellm.UserText("hi")},
+		Thinking: &litellm.Thinking{Mode: litellm.ThinkingDisabled},
+	}, false)
+	if err == nil || !strings.Contains(err.Error(), "only supported for reasoning chat models") {
+		t.Fatalf("expected non-reasoning thinking error, got %v", err)
+	}
+}
+
 func TestBuildRequestReasoningModelConstraints(t *testing.T) {
 	provider := mustProvider(t)
 	_, err := provider.buildRequest(&litellm.Request{

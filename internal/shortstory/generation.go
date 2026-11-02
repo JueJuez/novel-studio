@@ -30,7 +30,8 @@ func AssembleStructureRequest(prompts assets.Prompts, brief Brief, knowledge []s
 		Purpose:      "shortstory-structure",
 		SystemPrompt: prompts.ShortStoryStructure,
 		UserPrompt:   "## 创意与约束\n\n" + briefJSON,
-		MaxTokens:    4096,
+		// P5-02 实测：结构 JSON（含长承诺）在 4K 输出被截断（样稿 B）。
+		MaxTokens: 8192,
 	}, nil
 }
 
@@ -61,7 +62,10 @@ func AssembleScenesRequest(prompts assets.Prompts, structure *Structure, sceneRa
 		SystemPrompt: prompts.ShortStoryScenes,
 		UserPrompt: fmt.Sprintf("## 已确认结构\n\n%s\n\n## 字数要求\n\n所有场景 word_budget 之和必须落在 %s（rune 口径）。\n",
 			structureJSON, sceneRange),
-		MaxTokens: 4096,
+		// 真实多场景计划的完整 JSON（含每景 facts/continuity，且承诺
+		// 原句需逐字复制）实测超过 4K 与 8K 输出上限（P5-02 样稿 A 两度
+		// 截断致解析失败）；scenes 是全管线最长的 JSON 产物，放开到 16384。
+		MaxTokens: 16384,
 	}, nil
 }
 
@@ -222,13 +226,16 @@ func joinOrNone(values []string) string {
 }
 
 func sceneMaxTokens(wordBudget int) int {
-	// 1 token ≈ 1.5 rune 的保守上界 + 收尾余量。
-	tokens := wordBudget * 2 / 3
+	// P5-02 实测（deepseek-v4-flash，样稿 A scene-2：677 rune 用满 1024
+	// token 被截断）：该模型中文 ≈1.5 token/rune，旧系数 2/3 低估约 2.2 倍。
+	// 取 3/2 换算 + 收尾余量，上不封顶到 32768。
+	tokens := wordBudget * 3 / 2
+	tokens += 512
 	if tokens < 1024 {
 		tokens = 1024
 	}
-	if tokens > 8192 {
-		tokens = 8192
+	if tokens > 32768 {
+		tokens = 32768
 	}
 	return tokens
 }

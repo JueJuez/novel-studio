@@ -77,9 +77,18 @@ func CommitFullText(auth *authoring.Store, scenes []Scene) (*authoring.TextVersi
 	if err != nil {
 		return nil, err
 	}
+	// 幂等收口：场景版本未变时重复 Commit 必须返回同一 head。候选寻址
+	// 键含 base 版本——若每次都重新 Propose，base 随上次提交推进，版本
+	// 链会无谓生长并把审阅/确认绑定甩成陈旧（P5-02 实测两连跳）。
+	if head != nil && head.Content == content {
+		return head, nil
+	}
+	// 候选寻址键必须确定性：场景版本不变时重复 Commit 必须命中同一候选
+	// （幂等），否则审阅/确认绑定的版本会被时间戳漂移甩下（P5-02 实测：
+	// finalize 二次提交产生新 head，旧终审失效）。组装时间由交付清单的
+	// exported_at 承载，不进寻址键。
 	provenance, err := MarshalCanonical(map[string]any{
 		"scene_versions": sceneVersions,
-		"assembled_at":   time.Now().UTC().Format(time.RFC3339),
 	})
 	if err != nil {
 		return nil, err
@@ -120,7 +129,13 @@ func FinalizeGateCheck(auth *authoring.Store, scenes []Scene) error {
 		return fmt.Errorf("%w: 终审报告绑定的是旧版本（阻断旧哈希审核复用）", ErrDeliveryBlocked)
 	}
 	for _, issue := range report.Issues {
-		if issue.Severity == "blocker" {
+		if issue.Severity != "blocker" {
+			continue
+		}
+		// 作者终裁豁免：blocker 的 issue 来源被作者显式拒绝（裁定不成立/
+		// 不构成交付障碍）才放行；未决、接受、读取失败一律阻断。
+		waived, err := ReviewIssueWaived(auth, report, issue)
+		if err != nil || !waived {
 			return fmt.Errorf("%w: 终审存在未豁免 blocker（%s: %s）", ErrDeliveryBlocked, issue.Type, issue.Description)
 		}
 	}

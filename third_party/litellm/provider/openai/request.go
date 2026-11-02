@@ -30,7 +30,7 @@ func (p *Provider) buildRequest(req *litellm.Request, stream bool) (*chatRequest
 		out.MaxCompletionTokens = req.MaxTokens
 		out.TopP = nil
 		if req.Thinking != nil && req.Thinking.Mode == litellm.ThinkingDisabled {
-			out.ReasoningEffort = "none"
+			out.ReasoningEffort = disabledReasoningEffort(req.Model)
 		}
 		if req.Thinking != nil && req.Thinking.Mode == litellm.ThinkingEnabled {
 			effort := reasoningEffort(req.Thinking)
@@ -81,7 +81,29 @@ func (p *Provider) isReasoningModel(model string) bool {
 	if _, after, ok := strings.Cut(model, "/"); ok {
 		model = after
 	}
-	return strings.HasPrefix(model, "gpt-5")
+	if strings.HasPrefix(model, "gpt-5") {
+		return true
+	}
+	// DeepSeek hybrid reasoning models report reasoning_tokens in usage and
+	// accept reasoning_effort, but reject "none" — the proxy serving them
+	// requires one of off|low|medium|high|xhigh|max (novel-studio P5-02,
+	// verified against a commandcode-compatible endpoint).
+	return strings.HasPrefix(model, "deepseek-v4") ||
+		strings.HasPrefix(model, "deepseek-r1") ||
+		strings.HasPrefix(model, "deepseek-reasoner")
+}
+
+// disabledReasoningEffort maps ThinkingDisabled to the wire value each
+// reasoning family accepts: OpenAI uses "none", DeepSeek uses "off".
+func disabledReasoningEffort(model string) string {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if _, after, ok := strings.Cut(model, "/"); ok {
+		model = after
+	}
+	if strings.HasPrefix(model, "deepseek") {
+		return "off"
+	}
+	return "none"
 }
 
 func reasoningEffort(thinking *litellm.Thinking) string {
