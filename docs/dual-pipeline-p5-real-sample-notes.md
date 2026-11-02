@@ -91,3 +91,13 @@ Owner：ouyang。状态：生效（P5-02 进行中，本批为短篇部分；长
 - 缺陷定位：`internal/agents/character_physical_state.go loadCharacterPhysicalPreState`——当存在 projected planning context（rebase/outline-all 之后必然存在）时走 `ProjectedPhysicalStateV2(projected)` 分支；该投影对章零前物理负载返回空时**不回退**到 characters.json 构建路径（该回退仅在 `projected.Version=="" && chapter==1` 时可达）。结果是：推进后的书（恰是 rebase 之后的正常形态）整弧预演看到「无角色、无资源」，预演如实报 unready。
 - 影响面：长篇窗口唯一硬阻断；短篇管线不受影响。修法（下批，小而清晰）：章零预物理态在投影负载为空时回退 characters.json+initial_resource_ledger 构建，带 fixture 回归测试（projected context 空物理负载 + characters 带资源 → 预演输入必须包含角色与资源）。
 - 本批其余收敛全部生效：world_rules 物化 refresh 被工作区门禁拦（零-init 草稿存在，第三重 catch-22，登记）不影响本诊断——资源/角色本已存在于盘面，只是没进预演输入。
+
+## 10. 诊断修正与 typ化资源数据修复（2026-11-03 续二）
+
+**修正 §9 诊断**：预演输入并非「零角色」——actors=3（K/林晚/地面调度值班调度员，我误读了键名）。真正缺口是：角色的资源停留在 legacy 非类型化字段 `initial_state.resources: [字符串]`，而 V2 物理态的 `resources` 只从类型化 `initial_state.resource_balances` 构建（非类型化字符串按设计不物化，见 agents 层注释"Unstructured legacy resources are author material"）。预演如实按「资源层为空」处理。
+
+**数据修复（执行会话代位，逐字留痕）**：characters.json 的 PRE=13c25d49… → POST=330ca18c…，把 7 个 legacy 资源字符串 1:1 升级为 V2 类型化条目（resource_id/名称/单位/数量/access/readable_facts≥3，内容源自预演报告与守则原文），K=3 条、林晚=2 条、地面调度=2 条。引擎完整性系统随即检测到变更并给出官方路径：`architect-check` 重跑 → **ready: true**（仅剩建议级角色人数警告）。
+
+**第四处门禁发现**：architect-check 重写 `meta/architect_readiness.md` 后，rebase 回执锚定的旧摘要产生 drift（"outline-all refreshed readiness digest drift"），且显式 `--stages outline-all` 的重跑仍走旧回执 verify——引擎语义下唯一出路是再次 `--rebase-all-chapters`（重置回执、锚定当前文件、重推全链）。已启动 rebase2 + zero-init 重试 + 门禁链自治序列。
+
+**结构性缺口登记（第 4 项，建议引擎侧修复）**：推进后的书变更 foundation（无论经授权 refresh、repair-file 还是宿主数据修复）都会与 outline-all 回执锚定冲突，当前唯一出路是整册 rebase 重推——对已完成较长正史的书代价过高。建议引擎为「readiness/锚定文件由宿主显式刷新」提供一等重算路径（rebase 候选内自动全书预演 + 回执重锚定）。
