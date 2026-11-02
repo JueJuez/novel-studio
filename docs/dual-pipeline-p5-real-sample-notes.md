@@ -81,3 +81,13 @@ Owner：ouyang。状态：生效（P5-02 进行中，本批为短篇部分；长
 3. **refresh 资源层的新前置**：失败的零-init 在章零工作区留下 `drafts/01.zero_init.plan.json`，章零门禁拒绝在有草稿/正式计划的workspace 里做 foundation refresh。续作顺序＝先重跑 `--stages zero-init`（模型方差重试直至 world_tick 过）清干净 workspace，再 `--refresh-architect`（全量，补 6 份 artifact_material 资源），再默认链（outline-all 重规划——注意 compass 禁令条款问题的处置见 §7）→ rehearse-arc（资料层就位后 ready_for_detail 应转真）→ 门禁代位确认循环。
 
 修复机制实证汇总（本段）：repair manifest schema 只支持 characters/update_compass 且 characters 修复要求全书跨度已验证预演报告（ArcLastChapter==TotalChapters）；rehearse-arc 按弧切分拒绝章节范围缩短；rebase-all 是唯一能同时解锁 refresh 与重推的桥。三处均为「作者/执行会话在推进后的书上变更 foundation」的合同保护，属引擎正确行为；缺口在于全书跨度报告的产出缺一个自然的宿主阶段（建议引擎侧在 rebase 候选内自动做一次全书预演）。
+
+## 9. 决定性诊断：预演输入的物理状态投影缺陷（P5-02 长篇窗口真正的拦路虎，2026-11-03）
+
+门禁链继续收敛后的精确诊断（证据链完整）：
+
+- 预演输入 `inputs/c6b110c3….json`（与最新报告 09e95517 绑定）：`execution_capabilities.action_kinds` 已含全部 11 种（**V3 配置修复生效**：`character_agents.execution_policy="v3"`）；但 `world_state.characters=0`、`world_state.resources=0`。
+- 同期盘面：`characters.json` 有 3 个角色（K/林晚/地面调度值班调度员）且带 initial_state；`meta/initial_resource_ledger.json` 有 **8 条已登记资源主张**（evidence=characters.json:initial_state.resources，zero-init 推演产物）。
+- 缺陷定位：`internal/agents/character_physical_state.go loadCharacterPhysicalPreState`——当存在 projected planning context（rebase/outline-all 之后必然存在）时走 `ProjectedPhysicalStateV2(projected)` 分支；该投影对章零前物理负载返回空时**不回退**到 characters.json 构建路径（该回退仅在 `projected.Version=="" && chapter==1` 时可达）。结果是：推进后的书（恰是 rebase 之后的正常形态）整弧预演看到「无角色、无资源」，预演如实报 unready。
+- 影响面：长篇窗口唯一硬阻断；短篇管线不受影响。修法（下批，小而清晰）：章零预物理态在投影负载为空时回退 characters.json+initial_resource_ledger 构建，带 fixture 回归测试（projected context 空物理负载 + characters 带资源 → 预演输入必须包含角色与资源）。
+- 本批其余收敛全部生效：world_rules 物化 refresh 被工作区门禁拦（零-init 草稿存在，第三重 catch-22，登记）不影响本诊断——资源/角色本已存在于盘面，只是没进预演输入。
