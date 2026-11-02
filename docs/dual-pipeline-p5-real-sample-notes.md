@@ -71,3 +71,13 @@ Owner：ouyang。状态：生效（P5-02 进行中，本批为短篇部分；长
 **收敛实证**：outline-all 连续失败中，未兑现 non_negotiables 从 4 条收敛到 1 条（non_negotiable-04，纯禁令），模型在逐条给出具体兑现。当前自治运行器继续磨（门禁代位确认口径不变）；若 non_negotiable-04 持续不可兑现，正路是 chapter-zero rebase 后修正该条硬合同（rebase 协议属长篇返工边界，留待下一批或引擎侧修复）。
 
 工程影响评估：两处缺口（§6 short 级无分层 + refresh 摘要预读阻断；本节 禁令式硬合同无授权修复通道）均为长篇 sealed 流程与作者合同写法的交互问题，不阻塞短篇管线；已按「失败区分基线问题」纪律登记，建议后续在引擎层为禁令式 non_negotiables 提供 entry 期校验（compass 写入时即拒绝不可兑现条款）。
+
+## 8. 长篇窗口门链突破与精确续作路径（2026-11-03 续）
+
+本段把长篇窗口推进到 rebase 之后的章零态，并完整测绘了 foundation 变更的门禁链：
+
+1. **`--rebase-all-chapters` 成功**（无修复参数）：`meta/all_chapter_rebase.json` 回执落盘（RECEIPT_OK），正史安全归档并回到章零——此前 update_compass/全量 refresh 被拦的「缺 rebase 回执」前提已解除。
+2. **零-init 重推发现模型级违规（可重试类）**：initial world_tick 丢失显式时间锚「明天」；三条 world_tick 事件让「地面调度值班调度员」在第 1/3 章可见，早于大纲首次可见（第 6 章）——角色可见性合同校验生效（计划 §6.1 的角色知识边界在真实链路上工作）。
+3. **refresh 资源层的新前置**：失败的零-init 在章零工作区留下 `drafts/01.zero_init.plan.json`，章零门禁拒绝在有草稿/正式计划的workspace 里做 foundation refresh。续作顺序＝先重跑 `--stages zero-init`（模型方差重试直至 world_tick 过）清干净 workspace，再 `--refresh-architect`（全量，补 6 份 artifact_material 资源），再默认链（outline-all 重规划——注意 compass 禁令条款问题的处置见 §7）→ rehearse-arc（资料层就位后 ready_for_detail 应转真）→ 门禁代位确认循环。
+
+修复机制实证汇总（本段）：repair manifest schema 只支持 characters/update_compass 且 characters 修复要求全书跨度已验证预演报告（ArcLastChapter==TotalChapters）；rehearse-arc 按弧切分拒绝章节范围缩短；rebase-all 是唯一能同时解锁 refresh 与重推的桥。三处均为「作者/执行会话在推进后的书上变更 foundation」的合同保护，属引擎正确行为；缺口在于全书跨度报告的产出缺一个自然的宿主阶段（建议引擎侧在 rebase 候选内自动做一次全书预演）。
