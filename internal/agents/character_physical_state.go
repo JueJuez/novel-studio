@@ -22,19 +22,18 @@ func loadCharacterPhysicalPreState(st *store.Store, chapter int, projected domai
 		if err != nil {
 			return domain.WorldPhysicalStateV2{}, err
 		}
-		if physical != nil {
+		if physical != nil && !domain.IsEmptyWorldPhysicalStateV2(*physical) {
 			return *physical, nil
 		}
 		baseline, err := st.LoadProjectAllAcceptedCharacterBaseline(projected.GenerationID, chapter, projected.StateRoot)
 		if err != nil {
 			return domain.WorldPhysicalStateV2{}, err
 		}
-		if baseline != nil {
-			if baseline.PhysicalState == nil {
-				return domain.WorldPhysicalStateV2{}, fmt.Errorf("accepted physical source snapshot is empty")
-			}
+		if baseline != nil && baseline.PhysicalState != nil && !domain.IsEmptyWorldPhysicalStateV2(*baseline.PhysicalState) {
 			return *baseline.PhysicalState, nil
 		}
+		// 空投影/空基线不携带信息：落回下方按章构建的路径（chapter==1 用
+		// authoring foundation；其余章按既有严格前驱证据链）。
 	}
 	if chapter == 1 {
 		characters, err := st.Characters.Load()

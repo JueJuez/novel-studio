@@ -107,3 +107,10 @@ Owner：ouyang。状态：生效（P5-02 进行中，本批为短篇部分；长
 类型化资源生效后的首次预演（ba9b436f）：material/resources 类缺口全部闭合，11 条 unresolved_items **逐条自证非阻断**（"不构成当前路径的阻断""属后续阶段待实际履行""不阻断本弧所选路径"）——内容已达可进入详细规划的状态，但 `ready_for_detail` 仍为 False。
 
 判定语义问题：预演模型把「条件性披露」（跨章义务、软纲前提、未预置参数的如实声明）计入了 unresolved_items，而 ready 语义一旦存在未决项即 False。三个选项：(a) 引擎改 ready 判定（区分阻断/披露，需设计决策）；(b) 调整预演提示词——unresolved_items 只收阻断项，条件性披露归入 summary（不改代码，下批首选试金石）；(c) 接受现状并将窗口样稿标记为待设计决策。属引擎语义设计点，登记待定，不由自动化会话擅自定夺。
+
+## 12. 窗口突破：预演首次 ready，链路进入逐章推演（2026-11-03 收批）
+
+1. **预物理态回退修复入库**（domain.IsEmptyWorldPhysicalStateV2 助手 + loadCharacterPhysicalPreState 空投影/空基线回退；回归测试走 baseline 空物理态真实路径，含非空基线权威保留反例）。
+2. **类型化资源两轮升级**（PRE 13c25d49→330ca18c→f822cade，留痕）：legacy 字符串 1:1 类型化 7 条 + 粒度补齐（遥测读数序列/设备留档卷宗/值守位代号台账/气闸压差表/环段作业灯/维护工具/个人物品柜/当班记录夹）。途中踩坑并修正：perception kind 仅限 unknown/last_observed/reported/estimated/unaware（readable 非法）；last_observed 要求有据金额；inspectable_surfaces 仅允许 container_exterior/seal_exterior 字面量。
+3. **rebase3 全链通过**：REBASE3_EXIT=0（新回执锚定当前 foundation）→ zero-init 首轮过 → **rehearse-arc 首次 ready（RH3_EXIT=0）**——material/contract 双清单全绿，resources 缺口正式闭合。
+4. 链路现处 project-all V1A1 第 1/3 章（世界推演→POV 计划→冻结渲染包）。作者门禁将在 seal 与正文发布边界触发，运行器代位确认口径不变。§11 的 ready 判定语义设计点在资源补齐后未再复现（material 全绿即 ready），暂无需引擎改动。

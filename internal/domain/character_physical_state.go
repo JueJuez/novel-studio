@@ -70,6 +70,14 @@ type WorldPhysicalStateV2 struct {
 	Actors    []CharacterPhysicalStateV2 `json:"actors"`
 }
 
+// IsEmptyWorldPhysicalStateV2 报告物理状态是否不带任何角色与资源。
+// 空投影不携带信息：章 1 的 authoring foundation（characters.json 的
+// initial_state）才是权威来源，不得被空投影遮蔽（P5-02 长篇窗口实测：
+// outline-all 章零回执写入空物理态后，整弧预演看到零角色零资源）。
+func IsEmptyWorldPhysicalStateV2(state WorldPhysicalStateV2) bool {
+	return len(state.Actors) == 0 && len(state.Resources) == 0
+}
+
 // This is deliberately a separate type: observations cannot serialize actual
 // world balances by copying an arbiter-only catalog entry.
 type CharacterResourceViewV2 struct {
