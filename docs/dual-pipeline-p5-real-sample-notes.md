@@ -101,3 +101,9 @@ Owner：ouyang。状态：生效（P5-02 进行中，本批为短篇部分；长
 **第四处门禁发现**：architect-check 重写 `meta/architect_readiness.md` 后，rebase 回执锚定的旧摘要产生 drift（"outline-all refreshed readiness digest drift"），且显式 `--stages outline-all` 的重跑仍走旧回执 verify——引擎语义下唯一出路是再次 `--rebase-all-chapters`（重置回执、锚定当前文件、重推全链）。已启动 rebase2 + zero-init 重试 + 门禁链自治序列。
 
 **结构性缺口登记（第 4 项，建议引擎侧修复）**：推进后的书变更 foundation（无论经授权 refresh、repair-file 还是宿主数据修复）都会与 outline-all 回执锚定冲突，当前唯一出路是整册 rebase 重推——对已完成较长正史的书代价过高。建议引擎为「readiness/锚定文件由宿主显式刷新」提供一等重算路径（rebase 候选内自动全书预演 + 回执重锚定）。
+
+## 11. 材料缺口闭合；剩余为 ready 判定语义设计点（2026-11-03 收批）
+
+类型化资源生效后的首次预演（ba9b436f）：material/resources 类缺口全部闭合，11 条 unresolved_items **逐条自证非阻断**（"不构成当前路径的阻断""属后续阶段待实际履行""不阻断本弧所选路径"）——内容已达可进入详细规划的状态，但 `ready_for_detail` 仍为 False。
+
+判定语义问题：预演模型把「条件性披露」（跨章义务、软纲前提、未预置参数的如实声明）计入了 unresolved_items，而 ready 语义一旦存在未决项即 False。三个选项：(a) 引擎改 ready 判定（区分阻断/披露，需设计决策）；(b) 调整预演提示词——unresolved_items 只收阻断项，条件性披露归入 summary（不改代码，下批首选试金石）；(c) 接受现状并将窗口样稿标记为待设计决策。属引擎语义设计点，登记待定，不由自动化会话擅自定夺。
