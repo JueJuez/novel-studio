@@ -171,3 +171,10 @@ C9（30 次尝试、预算修复已部署）结果：grounding review 仍失败�
 **长篇窗口样稿现状**（全部留痕）：foundation 六层缺口已修复/绕行（分层大纲、类型化资源、V3 能力、手记所有权、资源粒度、预算），preplan/rehearse-arc 已通过（rebase3/4/5 各代次），卡点收敛至单一层：deepseek-v4-flash @ thinking=high 的 plan grounding review 工具调用。
 
 **决策点（交作者）**：(a) 换更强模型重跑本窗口（冻结合同需 rebase5-式重开，成本另计）；(b) thinking 降档重试（low 档结构化输出合规性好，规划深度有折损）；(c) 接受长篇窗口样稿当前为"未完成"（计划 §8 纪律：中断/模型拒绝样本单列，不补记通过），窗口基础设施与全部门禁测绘已作为 P5-02 资产留存，长篇真实交付样稿待模型升级或人工驱动后补做。三选项均不影响短篇三题材样稿与 legacy 回放的既成结论。
+
+## 18. 批次 17：低档重冻结收敛至 1 条 thematic unclear；上行锚点修复后 rebase7 运行中（2026-11-04）
+
+1. **rebase6（low 冻结）+ C10 12 轮**：unresolved contracts **0**（此前 4→1→0）、unresolved 7 条全部自证非阻断，仅剩 1 条 material unclear——"上行提交私人遗留物登记请求"，且预演自己指出该请求可经遥测终端提交（K 持有使用权）。**这是全部收敛史中距 ready 最近的一次**。
+2. **上行锚点数据修复**：给 res_b2c3d4e5f6071819（遥测终端使用权）补 readable_fact "上行登记/预约/例行汇报均通过遥测终端提交"，为该 unclear 操作提供显式 resource_ref 锚点。
+3. **第四重门禁闭环实证**：foundation 数据变更后 → characters.json 更新检测 → architect-check（ready:true）→ readiness digest drift → 唯一出路 rebase-all。已启动 rebase7 + zero-init + 预演 + 门禁链完整序列（C11，30 次预算）。
+4. 若 rebase7 后预演 ready → 门禁链直接完成 V1A1 渲染与 seal/publish 门禁 → 窗口收尾。若仍不 ready → 长篇窗口按计划 §8 标记未完成待作者决策（选项不变：换模型/降档已试/接受），不再消耗预算。
