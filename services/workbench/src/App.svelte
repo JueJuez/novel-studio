@@ -165,6 +165,10 @@
 </main>
 
 <style>
+  /* 显式声明亮色方案：不随 UA 的 prefers-color-scheme 翻转，避免暗色
+     环境下出现黑底黑字（P5-03 走查实证：未声明时正文在暗色浏览器不可读）。 */
+  :global(html) { color-scheme: light; }
+  :global(body) { background: #fafafa; color: #1a1a1a; margin: 0; }
   main { max-width: 860px; margin: 0 auto; font-family: system-ui, sans-serif; }
   .error { color: #b00020; }
   .keep { opacity: 0.6; }

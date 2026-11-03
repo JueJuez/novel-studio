@@ -16,10 +16,12 @@ const (
 	DiffInsert = "insert"
 )
 
-// DiffOp 是一段保持/删除/插入的文本。
+// DiffOp 是一段保持/删除/插入的文本。json 键为小写：workbench /diff
+// 直接序列化本结构给前端（P5-03 走查实证：无 tag 时 Go 默认大写键名
+// 与前端 op.kind/op.text 契约不符，差异视图渲染为空）。
 type DiffOp struct {
-	Kind string
-	Text string
+	Kind string `json:"kind"`
+	Text string `json:"text"`
 }
 
 // DiffParagraphs 对两版正文做段落级 LCS 差异。段落切分与 SplitBlocks
