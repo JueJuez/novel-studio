@@ -6,6 +6,8 @@
 
 **开源、本地优先、可恢复的 AI 长篇小说创作引擎。**
 
+> **当前开发仓库**：[JueJuez/novel-studio](https://github.com/JueJuez/novel-studio)。长短篇双管线改造进行中——短篇三题材真实样稿已交付/候选、legacy 回放通过、长篇窗口推进至逐章推演（详见[开发计划](docs/dual-pipeline-development-plan.md)与[真实样稿记录](docs/dual-pipeline-p5-real-sample-notes.md)）。原始引擎说明如下；Release、一键安装和预构建镜像仍指向上游，使用本分支请按源码方式运行。第三方许可声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
 先推演世界与角色，再封存章节计划，最后把主视角真正看见的因果写成正文。
 
 [![GitHub Stars](https://img.shields.io/github/stars/Xiaoyangy/novel-studio?style=flat&logo=github&color=E3B341)](https://github.com/Xiaoyangy/novel-studio)
