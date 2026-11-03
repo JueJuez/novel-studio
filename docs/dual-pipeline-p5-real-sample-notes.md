@@ -162,7 +162,9 @@ rebase4 后第 1 章 8 个激活轮未就绪（上限）。World Arbiter 裁决�
 
 **批次 17 附带产出**：P5-03 浏览器走查完成（见 docs/dual-pipeline-p5-browser-walkthrough.md），修复 3 项 UI 链路缺陷（dist 陈旧/DiffOp json 键/颜色方案），走查零真实模型调用。
 
-## 17. C9 结果：预算修复生效但 thinking=high 撞模型能力墙；决策点交作者（2026-11-04）
+## 18. C9 结果：预算修复生效但 thinking=high 撞模型能力墙；决策点交作者（2026-11-04）
+
+> 编注：本节原编号「17」与上节重复（两会话并行收批碰撞所致），改为 18；内容为并行会话的独立结论，与 §17 互补。
 
 C9（30 次尝试、预算修复已部署）结果：grounding review 仍失败（累计 24+ 次）。与 §14 的 output=6144 截断不同，本轮 thinking=high + 32768 预算下 deepseek-v4-flash 将全部输出耗于推理，content 为空且无 tool call——salvage 回退无从提取（输入为空）。这是该模型在 high 档下「长上下文结构化工具调用」的能力墙，非解析或预算问题。
 
