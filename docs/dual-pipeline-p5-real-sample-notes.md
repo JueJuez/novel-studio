@@ -178,3 +178,11 @@ C9（30 次尝试、预算修复已部署）结果：grounding review 仍失败�
 2. **上行锚点数据修复**：给 res_b2c3d4e5f6071819（遥测终端使用权）补 readable_fact "上行登记/预约/例行汇报均通过遥测终端提交"，为该 unclear 操作提供显式 resource_ref 锚点。
 3. **第四重门禁闭环实证**：foundation 数据变更后 → characters.json 更新检测 → architect-check（ready:true）→ readiness digest drift → 唯一出路 rebase-all。已启动 rebase7 + zero-init + 预演 + 门禁链完整序列（C11，30 次预算）。
 4. 若 rebase7 后预演 ready → 门禁链直接完成 V1A1 渲染与 seal/publish 门禁 → 窗口收尾。若仍不 ready → 长篇窗口按计划 §8 标记未完成待作者决策（选项不变：换模型/降档已试/接受），不再消耗预算。
+
+## 19. 批次 17 检查点：rebase7 链路运行至 project-all 逐章推演（2026-11-04）
+
+rebase7 序列推进状态（自治后台）：REBASE7 完成 → 全链自动续推 outline-all/zero-init/preplan/rehearse-arc **全部通过** → 现处 **project-all V1A1 第 1/3 章**（世界推演 → POV 计划 → 冻结渲染包）。上行锚点修复后 rehearse-arc 在 rebase 流内**首轮通过**（未再现 material unclear）。
+
+门禁代位确认循环（C11）已武装：seal 门（计划封存）与 publish 门（正文发布）触发时自动经 workbench author-gate 代位确认并逐条留痕。链路完成（含逐章渲染与 complete-book）或触顶（12 连败）时任务通知续作。
+
+成本口径：本窗口累计真实调用（brainstorm→…→project-all 多轮）已计入账本（既有计量缺口如实保留），下批完成窗口后一并汇总。
