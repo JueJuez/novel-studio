@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/chenhongyang/novel-studio/internal/bootstrap"
@@ -22,6 +23,24 @@ const planGroundingPrompt = `你是章节计划的裁决忠实性检查器，不
 标准：计划的当章实际动作、会面、地点、用时、已知事实与结果必须由最终arbitration、simulation及POV开章observation支持。角色提出/打算/期待/条件允许不代表动作已执行；承诺交付不等于送达，持有不等于读到，reported/estimated不等于世界精确真值。旧软大纲不能授权裁决未发生的事件。完成状态partial/in_progress不能写成完成。
 逐项核对contract.required_beats、continuity_checks、hook、causal_beats、render_capacity.scene_units、ending_consequence_contract、arc_transition_contract及可见对白/证据链。区分作者侧离屏约束、未来打算、历史回忆、禁止事项与正文当场发生的事实；禁止事项提及秘密不等于泄露。无需逐字复述裁决，不因文学表达、比喻、微动作、合理感官细节或措辞不同而拒绝；这些细节不得增加实质决策/资源/信息/地点/时间变化。人物可作尚未验证的猜测，但计划必须明确其不确定性。
 只报告有明确依据的实质矛盾。无矛盾则pass=true,findings=[]；否则pass=false，1-8条，合并同源问题。kind只能time/location/knowledge/intent/outcome。每条必须有指向输入JSON的plan_path（/plan/...）和source_path（/arbitration/...、/simulation/...或/pov_observation/...），RFC6901数组下标从0计；plan_quote/source_quote逐字摘录对应值（各<=600字），explanation只写矛盾及应修范围（<=500字）。不得引用不存在的路径或自己编造证据。JSON数字时间单位为day，1分钟=1/1440 day。仅须修Planner，绝不能要求角色重选以迁就剧情。`
+
+// planGroundingReviewMaxOutputTokens caps one grounding review call's output
+// budget. Reasoning models spend this budget on thinking before emitting the
+// verdict tool call: deepseek-v4-flash at thinking=high exhausted the previous
+// 6144-token cap every time without ever emitting submit_plan_grounding_verdict
+// (P5-02 long-window evidence: 27+ identical "must return exactly one
+// structured verdict" failures, usage rows pinned at output=6144). The extra
+// headroom keeps the verdict intact under full reasoning; the protocol digest
+// deliberately excludes this knob, so resuming an in-flight generation with the
+// raised cap is not a protocol change.
+const planGroundingReviewMaxOutputTokens = 32768
+
+// groundingReviewCallOptions 是 grounding review 两个调用点（主路径与
+// Codex 精确输入重试视图）共享的调用选项：透传该代次的 thinking 档位，
+// 并保证输出预算覆盖推理型模型。
+func groundingReviewCallOptions(thinking agentcore.ThinkingLevel) []agentcore.CallOption {
+	return []agentcore.CallOption{agentcore.WithThinking(thinking), agentcore.WithMaxTokens(planGroundingReviewMaxOutputTokens)}
+}
 
 func planGroundingToolSpec() agentcore.ToolSpec {
 	finding := schema.Object(
@@ -170,7 +189,7 @@ func runPlanGroundingReview(ctx context.Context, model agentcore.ChatModel, thin
 			messages = append(messages, agentcore.UserMsg(string(part)))
 		}
 	}
-	response, err := model.Generate(ctx, messages, []agentcore.ToolSpec{planGroundingToolSpec()}, agentcore.WithThinking(thinking), agentcore.WithMaxTokens(6144))
+	response, err := model.Generate(ctx, messages, []agentcore.ToolSpec{planGroundingToolSpec()}, groundingReviewCallOptions(thinking)...)
 	if err != nil {
 		response, err = retryPlanGroundingModelView(ctx, model, thinking, input, raw, messages, err)
 	}
@@ -181,10 +200,20 @@ func runPlanGroundingReview(ctx context.Context, model agentcore.ChatModel, thin
 		return verdict, fmt.Errorf("plan grounding returned no response")
 	}
 	calls := response.Message.ToolCalls()
-	if len(calls) != 1 || calls[0].Name != "submit_plan_grounding_verdict" || calls[0].ArgsInvalid {
-		return verdict, fmt.Errorf("plan grounding must return exactly one structured verdict")
+	var argsRaw []byte
+	if len(calls) == 1 && calls[0].Name == "submit_plan_grounding_verdict" && !calls[0].ArgsInvalid {
+		argsRaw = calls[0].Args
+	} else {
+		// P5-02 回退（deepseek-v4-flash 实测）：模型常把裁决写成文本而非
+		// 工具调用。仅当消息内容能严格解码出唯一 {pass, findings} 裁决时
+		// 才接受——验证强度与工具调用路径完全一致；解不出来维持原错误。
+		salvaged, ok := salvagePlanGroundingVerdictJSON(response.Message.Content)
+		if !ok {
+			return verdict, fmt.Errorf("plan grounding must return exactly one structured verdict")
+		}
+		argsRaw = salvaged
 	}
-	decoder := json.NewDecoder(bytes.NewReader(calls[0].Args))
+	decoder := json.NewDecoder(bytes.NewReader(argsRaw))
 	decoder.DisallowUnknownFields()
 	var wire struct {
 		Pass     *bool                          `json:"pass"`
@@ -204,4 +233,63 @@ func runPlanGroundingReview(ctx context.Context, model agentcore.ChatModel, thin
 		return verdict, err
 	}
 	return verdict, nil
+}
+
+// salvagePlanGroundingVerdictJSON 从消息文本中提取唯一的裁决 JSON 对象
+//（含 "pass" 与 "findings" 两个字段的平衡块）。P5-02 实测 deepseek
+// 常以文本而非工具调用提交裁决；回退解析与工具调用路径共用同一
+// DisallowUnknownFields 严格解码，验证强度不降。找不到或解析失败返回
+// false，调用方维持原错误。
+func salvagePlanGroundingVerdictJSON(content []agentcore.ContentBlock) ([]byte, bool) {
+	var text strings.Builder
+	for _, block := range content {
+		if block.Type == agentcore.ContentText {
+			text.WriteString(block.Text)
+		}
+	}
+	runes := []rune(text.String())
+	for start := 0; start < len(runes); start++ {
+		if runes[start] != '{' {
+			continue
+		}
+		depth := 0
+		inString := false
+		escaped := false
+		for end := start; end < len(runes); end++ {
+			r := runes[end]
+			if escaped {
+				escaped = false
+				continue
+			}
+			switch {
+			case r == '\\' && inString:
+				escaped = true
+			case r == '"':
+				inString = !inString
+			case inString:
+			case r == '{':
+				depth++
+			case r == '}':
+				depth--
+				if depth == 0 {
+					candidate := string(runes[start : end+1])
+					if !strings.Contains(candidate, `"pass"`) || !strings.Contains(candidate, `"findings"`) {
+						continue
+					}
+					var probe map[string]json.RawMessage
+					if json.Unmarshal([]byte(candidate), &probe) != nil {
+						continue
+					}
+					if _, ok := probe["pass"]; !ok {
+						continue
+					}
+					if _, ok := probe["findings"]; !ok {
+						continue
+					}
+					return []byte(candidate), true
+				}
+			}
+		}
+	}
+	return nil, false
 }

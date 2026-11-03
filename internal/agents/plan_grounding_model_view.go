@@ -47,5 +47,5 @@ func retryPlanGroundingModelView(ctx context.Context, model agentcore.ChatModel,
 	retry[1] = packet
 	// Reuse the same accounted adapter. Its original local reject is a skipped
 	// attempt; only this exact retry can dispatch and report real provider usage.
-	return model.Generate(ctx, retry, []agentcore.ToolSpec{planGroundingToolSpec()}, agentcore.WithThinking(thinking), agentcore.WithMaxTokens(6144))
+	return model.Generate(ctx, retry, []agentcore.ToolSpec{planGroundingToolSpec()}, groundingReviewCallOptions(thinking)...)
 }

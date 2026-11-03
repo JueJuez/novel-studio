@@ -15,12 +15,14 @@ type groundingProbeModel struct {
 	calls    int
 	messages []agentcore.Message
 	specs    []agentcore.ToolSpec
+	opts     []agentcore.CallOption
 }
 
-func (m *groundingProbeModel) Generate(_ context.Context, messages []agentcore.Message, specs []agentcore.ToolSpec, _ ...agentcore.CallOption) (*agentcore.LLMResponse, error) {
+func (m *groundingProbeModel) Generate(_ context.Context, messages []agentcore.Message, specs []agentcore.ToolSpec, opts ...agentcore.CallOption) (*agentcore.LLMResponse, error) {
 	m.calls++
 	m.messages = messages
 	m.specs = specs
+	m.opts = opts
 	return &agentcore.LLMResponse{Message: agentcore.Message{Role: agentcore.RoleAssistant, Content: []agentcore.ContentBlock{agentcore.ToolCallBlock(agentcore.ToolCall{ID: "verdict", Name: "submit_plan_grounding_verdict", Args: json.RawMessage(m.args)})}}}, nil
 }
 func (*groundingProbeModel) GenerateStream(context.Context, []agentcore.Message, []agentcore.ToolSpec, ...agentcore.CallOption) (<-chan agentcore.StreamEvent, error) {
@@ -46,6 +48,28 @@ func TestPlanGroundingModelHasOneReadOnlyCapabilityAndExactSections(t *testing.T
 	}
 	if m.calls != 1 {
 		t.Fatal("over-budget evidence reached provider")
+	}
+}
+
+func TestPlanGroundingReviewOutputBudgetCoversReasoningModels(t *testing.T) {
+	// P5-02 长篇窗口实测：deepseek-v4-flash 在 thinking=high 下推理即可耗尽
+	// 旧 6144 上限，verdict tool call 永远无法返回（27+ 次同因失败）。review
+	// 调用的输出预算必须覆盖推理型模型，且两个调用点共享同一选项。
+	input := domain.PlanGroundingInput{Policy: domain.PlanGroundingPolicyV1, Plan: domain.ChapterPlan{Goal: "未读材料"}}
+	m := &groundingProbeModel{args: `{"pass":true,"findings":[]}`}
+	if _, err := runPlanGroundingReview(context.Background(), m, agentcore.ThinkingHigh, input); err != nil {
+		t.Fatal(err)
+	}
+	cfg := agentcore.ResolveCallConfig(m.opts)
+	if cfg.MaxTokens != planGroundingReviewMaxOutputTokens {
+		t.Fatalf("grounding review max output tokens = %d, want %d", cfg.MaxTokens, planGroundingReviewMaxOutputTokens)
+	}
+	if cfg.ThinkingLevel != agentcore.ThinkingHigh {
+		t.Fatalf("thinking level = %q, want the generation's pinned high", cfg.ThinkingLevel)
+	}
+	retryCfg := agentcore.ResolveCallConfig(groundingReviewCallOptions(agentcore.ThinkingMedium))
+	if retryCfg.MaxTokens != planGroundingReviewMaxOutputTokens {
+		t.Fatalf("retry view max output tokens = %d, want %d", retryCfg.MaxTokens, planGroundingReviewMaxOutputTokens)
 	}
 }
 
