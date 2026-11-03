@@ -190,3 +190,9 @@ rebase7 序列推进状态（自治后台）：REBASE7 完成 → 全链自动�
 ## 20. 批次 18 检查点：第 1 章方差收敛通过，第 2 章推演进行中（2026-11-04）
 
 C11 链路第 1 章 plan_details + grounding review 经 3 轮方差重试后通过（attempt 3 起进入第 2 章）。第 2/3 章世界推演与 plan_details 进行中（attempts 4-12 均在第 2 章迭代，模型方差收敛中）。C11 预算 25 次尝试/12 连败上限，后台自治值守。第 1 章通过证明：grounding 回退解析 + 预算修复 + 类型化资源在 project-all 逐章推演层全部生效。窗口完成后 P5-02 即可定稿。
+
+## 21. 批次 19：C11 触顶根因=provider 故障窗口（非收敛壁）；C12 续推中（2026-11-04）
+
+C11 12 连败的根因定位：**"Upstream model provider is temporarily unavailable"**——provider 临时故障窗口，非 batch4 字段缺失或模型能力墙（chapter 2 已保存字段含 emotional_logic/reader_reward_plan 等 batch4 项，模型确实在补）。C12 运行器（provider 恢复后）继续第 2 章推演。
+
+第 1 章 plan_details + grounding 已通过（batch 18），第 2 章在收敛中。C12 30 次预算 / 12 连败上限，后台自治值守。
