@@ -196,3 +196,13 @@ C11 链路第 1 章 plan_details + grounding review 经 3 轮方差重试后通�
 C11 12 连败的根因定位：**"Upstream model provider is temporarily unavailable"**——provider 临时故障窗口，非 batch4 字段缺失或模型能力墙（chapter 2 已保存字段含 emotional_logic/reader_reward_plan 等 batch4 项，模型确实在补）。C12 运行器（provider 恢复后）继续第 2 章推演。
 
 第 1 章 plan_details + grounding 已通过（batch 18），第 2 章在收敛中。C12 30 次预算 / 12 连败上限，后台自治值守。
+
+## 22. 长篇窗口最终检查点：第 2 章引文保真墙（2026-11-04）
+
+C13 12 轮 + 此前 C12/C11/C10 共 50+ 次尝试，第 2 章 plan_details + grounding review 均未收敛。失败模式收敛为单一根因：**grounding review 产生的 findings 的 plan_quote/source_quote 与实际计划/模拟数据不匹配**（模型幻觉引文，验证器正确拒绝）。第 1 章同层经 3 轮方差收敛，但第 2 章的 simulation 数据结构更复杂（多角色 observable_effects 嵌套），deepseek-v4-flash 无法稳定逐字摘录。
+
+这是模型能力墙，非方差、非解析、非数据问题。三个选项：(a) 换更强模型（如 deepseek-r1 或 claude）重跑窗口；(b) 引擎侧放宽引文验证（不可取——违背 grounding 忠实性合同设计初衷）；(c) 接受窗口样稿当前为"第 1 章通过、第 2 章起待更强模型"（计划 §8 纪律）。
+
+**窗口样稿已交付资产**：分层大纲 + 角色类型化资源 + 预演通过（第 1 章）+ 预演报告 2 份（第 2 章缺口诊断）+ 基础设施全链路贯通。P5-02 三项中短篇三题材 ✓、legacy 回放 ✓、长篇窗口部分完成（第 1 章 ✓、第 2 章 ✗ 模型能力墙）。
+
+**预算汇总**：窗口累计 100+ 次真实调用（brainstorm/architect/rebase/outline-all/zero-init/preplan/rehearse-arc/project-all 多轮），token 消耗已计入账本。
