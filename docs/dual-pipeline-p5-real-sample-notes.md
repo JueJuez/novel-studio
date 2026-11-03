@@ -146,3 +146,26 @@ rebase4 后第 1 章 8 个激活轮未就绪（上限）。World Arbiter 裁决�
 - 手记所有权数据修复（PRE 05f87131→POST 930e1519）：res_d4e5f60718192031 从林晚 exclusive 移至 K（"遗留手记（上一班组留交现任）"），readable_facts 含封底名字链/分层正文/交接惯例三则。
 - rebase5（PID 11901）运行中：全链重推预计 20-40 分钟，完成后 zero-init 重试 + C8 门禁链循环自动接续（审计就绪裁决预期：K 现在可开柜取手记，核心事件可执行）。
 - 若第 1 章激活轮就绪 → project-all → seal 门禁（代位确认）→ render → publish 门禁 → 逐章推进至 V1A1 完成。窗口样稿剩余：V1A1 三章渲染 + 门禁 + （可选）第二弧。
+
+## 17. 批次 17：第 6 项集成缺陷修复（grounding 输出预算）与 C9 续推（2026-11-04）
+
+**rebase5 后的真相与诊断**：rebase5 完成后（回执 2026-11-03 08:31，architect/outline-all/zero-init/preplan/rehearse-arc 全部重验通过），链路停在 project-all C1 规划 finalize，失败形态与 §14 末尾一致：`plan grounding review did not complete: plan grounding must return exactly one structured verdict`，累计 27+ 次同因（usage_audit 实证：world_arbiter 通道 18 次连击输出恒等于 6144 上限）。定位为**第 6 项集成缺陷，与 §2 的 sceneMaxTokens 同族**：grounding review 调用硬编码 6144 输出上限，deepseek-v4-flash 在 reasoning=high 下推理即耗尽预算，verdict tool call 永远无法返回——结构性失败，重试无解。
+
+**修复（带回归测试）**：`internal/agents/plan_grounding.go` 新增 `planGroundingReviewMaxOutputTokens=32768` 与共享 `groundingReviewCallOptions`（主路径与 Codex 精确输入重试视图两处调用点统一），protocol digest 不含该旋钮（已核实：摘要只绑 Policy/Prompt/ToolSpec），**在飞 generation 无需 rebase 即可续跑**。回归测试 TestPlanGroundingReviewOutputBudgetCoversReasoningModels 钉住两调用点的 thinking 透传与输出预算。
+
+**顺带修复 a4521c3 必败 fixture**：`TestLoadCharacterPhysicalPreState*` 两用例的 fixture 以 `BaseCanonChapter:0` 调 Finalize——而 Finalize 拒绝 `<=0`（1df6e2a 起的合同，即笔记坑⑩），提交时未真正跑绿。重写：章 1 用例走「无 baseline 文件」这一唯一合法空形态（补 context_digest 计算），章 2 用例走合法 BaseCanonChapter=1 + workspace manifest 认证（json 键须 snake_case）；同时把「非空基线权威」断言强化为基线内容≠盘面 foundation（乙 vs 甲）。internal/agents 全包测试通过。
+
+**C9 续推与两段插曲**（日志 `output/acceptance/p5-02-logs/long-window/c9-{run,gates}.log`）：
+1. 修复后 grounding 立即生效：usage_audit 出现 out=7962 / 22301 的 world_arbiter 完成记录（首次越过 6144 上限并返回有效响应）；失败形态转为 **commandcode 代理长响应连接瞬断**（`read tcp …: connection reset`，真实瞬态，重试可收敛）。
+2. 锁悬挂事故：一次网络失败的管线进程退出清理悬挂约 7 分钟，期间持有 outline-all control flock，后续 15 次尝试全部 `outline-all control is busy` 秒败；持锁进程死亡后锁自愈（`/proc/locks` 定位持锁者）。教训：运行器的 TRANSIENT_FAIL 分支应区分「锁 busy」（退避更久）与「模型瞬断」。
+3. 本批收批时点：管线进程（timeout 1800 包裹）正在做 C1 规划实推（grounding 修复后首次实际推进），V1A1 三章渲染与门禁代位确认循环留待下批以同款运行器续作（确认面=workbench 8795 author-gate，哨兵解析与确认载荷已在 c9-runner.sh 内实现并验证）。
+
+**批次 17 附带产出**：P5-03 浏览器走查完成（见 docs/dual-pipeline-p5-browser-walkthrough.md），修复 3 项 UI 链路缺陷（dist 陈旧/DiffOp json 键/颜色方案），走查零真实模型调用。
+
+## 17. C9 结果：预算修复生效但 thinking=high 撞模型能力墙；决策点交作者（2026-11-04）
+
+C9（30 次尝试、预算修复已部署）结果：grounding review 仍失败（累计 24+ 次）。与 §14 的 output=6144 截断不同，本轮 thinking=high + 32768 预算下 deepseek-v4-flash 将全部输出耗于推理，content 为空且无 tool call——salvage 回退无从提取（输入为空）。这是该模型在 high 档下「长上下文结构化工具调用」的能力墙，非解析或预算问题。
+
+**长篇窗口样稿现状**（全部留痕）：foundation 六层缺口已修复/绕行（分层大纲、类型化资源、V3 能力、手记所有权、资源粒度、预算），preplan/rehearse-arc 已通过（rebase3/4/5 各代次），卡点收敛至单一层：deepseek-v4-flash @ thinking=high 的 plan grounding review 工具调用。
+
+**决策点（交作者）**：(a) 换更强模型重跑本窗口（冻结合同需 rebase5-式重开，成本另计）；(b) thinking 降档重试（low 档结构化输出合规性好，规划深度有折损）；(c) 接受长篇窗口样稿当前为"未完成"（计划 §8 纪律：中断/模型拒绝样本单列，不补记通过），窗口基础设施与全部门禁测绘已作为 P5-02 资产留存，长篇真实交付样稿待模型升级或人工驱动后补做。三选项均不影响短篇三题材样稿与 legacy 回放的既成结论。
