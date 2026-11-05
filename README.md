@@ -6,7 +6,7 @@
 
 **开源、本地优先、可恢复的 AI 长篇小说创作引擎。**
 
-> **当前开发仓库**：[JueJuez/novel-studio](https://github.com/JueJuez/novel-studio)。长短篇双管线改造进行中——短篇三题材真实样稿已交付/候选、legacy 回放通过、长篇窗口推进至逐章推演（详见[开发计划](docs/dual-pipeline-development-plan.md)与[真实样稿记录](docs/dual-pipeline-p5-real-sample-notes.md)）。原始引擎说明如下；Release、一键安装和预构建镜像仍指向上游，使用本分支请按源码方式运行。第三方许可声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+> **当前开发仓库**：[JueJuez/novel-studio](https://github.com/JueJuez/novel-studio)。长短篇双管线改造的实施任务已全部完成——短篇三题材真实样稿交付并经作者采用（2026-11-05）、legacy 回放通过、长篇窗口链路机制经真实调用验证（完整正文按作者裁决单列，升级路径已登记）。验收结论见[验收报告](docs/dual-pipeline-acceptance-report.md)（MVP 暂不标记、待作者最终确认），任务与证据见[开发计划](docs/dual-pipeline-development-plan.md)与[真实样稿记录](docs/dual-pipeline-p5-real-sample-notes.md)。原始引擎说明如下；Release、一键安装和预构建镜像仍指向上游，使用本分支请按源码方式运行。第三方许可声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 先推演世界与角色，再封存章节计划，最后把主视角真正看见的因果写成正文。
 
@@ -25,7 +25,7 @@
 
 ---
 
-> 当前开发仓库：[JueJuez/novel-studio](https://github.com/JueJuez/novel-studio)。长短篇双管线改造见[开发计划](docs/dual-pipeline-development-plan.md)，尚未实现。下文为继承的现有引擎说明；Release、一键安装和预构建镜像仍指向上游，使用本分支请按源码方式运行。
+> 当前开发仓库：[JueJuez/novel-studio](https://github.com/JueJuez/novel-studio)。长短篇双管线改造已按[开发计划](docs/dual-pipeline-development-plan.md)实施完成，并通过真实样稿验收（结论见[验收报告](docs/dual-pipeline-acceptance-report.md)；长篇完整正文按作者裁决单列，待更强模型）。下文为继承的现有引擎说明；Release、一键安装和预构建镜像仍指向上游，使用本分支请按源码方式运行。
 
 novel-studio 面向长篇小说、网文连载、短篇整书和故事工作室。它把大纲、人物、世界状态、RAG、正文审核与返工从易丢失的聊天上下文，转换成保存在本机、可验证、可恢复的生产流水线。
 
@@ -437,7 +437,8 @@ data/runs/<书名>/
 
 | 文档 | 内容 |
 |---|---|
-| [长短篇双管线开发计划](docs/dual-pipeline-development-plan.md) | 当前改造目标、能力来源、模块边界、实施任务和验收；业务功能待实施 |
+| [长短篇双管线开发计划](docs/dual-pipeline-development-plan.md) | 当前改造目标、能力来源、模块边界、实施任务与验收（P0—P5 已全部完成） |
+| [双管线验收报告](docs/dual-pipeline-acceptance-report.md) | 短篇/长篇真实样稿验收结论、用量与剩余作者侧待办 |
 | [生产与运维参考](README-TECHNICAL.md) | 执行锁、receipt、恢复、rebase、outline repair、命令和完整输出结构 |
 | [系统架构](docs/architecture.md) | Host、Agent、Tools、Store 与上下文拓扑 |
 | [Project-All 按弧架构](docs/project-all-architecture.md) | 当前弧推演、seal、逐章验收和下一弧解锁 |

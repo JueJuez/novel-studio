@@ -1,6 +1,6 @@
 # P5-02 真实云端小样记录（第一批：短篇三题材）
 
-Owner：ouyang。状态：生效（P5-02 进行中，本批为短篇部分；长篇窗口与 legacy 恢复样本下批继续）。更新日期：2026-11-01。
+Owner：ouyang。状态：生效（P5-02 已定稿 2026-11-05：短篇三题材交付+作者采用、legacy 回放通过、长篇窗口按作者裁决单列，见 §25；验收结论见 [dual-pipeline-acceptance-report.md](dual-pipeline-acceptance-report.md)）。更新日期：2026-11-05。
 
 模型与凭证：`deepseek/deepseek-v4-flash` @ `https://api.commandcode.ai/provider/v1`（OpenAI 兼容代理；密钥仅在仓库根 `.env.local`，配置经 `api_key_env` 引用，不入库、不进文档）。每作品一份项目级配置 `data/runs/<名>/.novel-studio/config.json`（gitignored，`reasoning_effort=off`）。
 

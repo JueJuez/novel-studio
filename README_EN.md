@@ -23,7 +23,7 @@ Simulate the world and its characters, seal the chapter plan, then render only t
 
 ---
 
-> Development repository: [JueJuez/novel-studio](https://github.com/JueJuez/novel-studio). The [dual-pipeline development plan](docs/dual-pipeline-development-plan.md) describes work that is not implemented yet. The engine documentation below is inherited from upstream; Release downloads, the installer, and prebuilt images still target upstream. Run this branch from source.
+> Development repository: [JueJuez/novel-studio](https://github.com/JueJuez/novel-studio). All implementation tasks of the [dual-pipeline development plan](docs/dual-pipeline-development-plan.md) are complete and validated against real model samples; see the [acceptance report](docs/dual-pipeline-acceptance-report.md) (Chinese) for verdicts — the long-form full manuscript is tracked separately pending a stronger model. The engine documentation below is inherited from upstream; Release downloads, the installer, and prebuilt images still target upstream. Run this branch from source.
 
 novel-studio is designed for novels, serialized fiction, complete short books, and story-production teams. It turns outlines, character state, world state, RAG, reviews, and rewrites from fragile chat history into a local, verifiable, recoverable production pipeline.
 
@@ -412,7 +412,8 @@ Current limits:
 
 | Document | Contents |
 |---|---|
-| [Dual-pipeline development plan](docs/dual-pipeline-development-plan.md) | Scope, source projects, module boundaries, implementation tasks, and acceptance; not implemented yet |
+| [Dual-pipeline development plan](docs/dual-pipeline-development-plan.md) | Scope, source projects, module boundaries, implementation tasks, and acceptance (P0–P5 complete) |
+| [Dual-pipeline acceptance report](docs/dual-pipeline-acceptance-report.md) | Acceptance verdicts, usage, and remaining author-side items (Chinese) |
 | [Production and operations](README-TECHNICAL.md) | Execution locks, receipts, recovery, rebase, outline repair, commands, and the full output tree |
 | [System architecture](docs/architecture.md) | Host, Agent, Tools, Store, and context topology |
 | [Project-All arc architecture](docs/project-all-architecture.md) | Current-arc projection, sealing, chapter acceptance, and next-arc unlock |
